@@ -81,6 +81,7 @@ body.is-empty .empty{display:block}
 .b{fill:none;stroke:#2f2219;stroke-linecap:round}
 .b.new{stroke-dasharray:1;stroke-dashoffset:1;animation:draw .75s ease-out forwards}
 @keyframes draw{to{stroke-dashoffset:0}}
+.crown{opacity:.74}
 .leafc{transform-box:fill-box;transform-origin:center}
 .leafc.new{animation:pop .55s cubic-bezier(.3,1.6,.5,1) both}
 @keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
@@ -113,6 +114,17 @@ body.is-empty .empty{display:block}
 .flame{transform-box:fill-box;transform-origin:center bottom;animation:flick .18s ease-in-out infinite alternate}
 @keyframes flick{from{transform:scale(1,1)}to{transform:scale(.85,1.15)}}
 .cglow{animation:pulse 1.7s ease-in-out infinite}
+.wisp{animation:wisp 4s ease-in-out infinite alternate}
+@keyframes wisp{from{transform:translate(-9px,5px)}to{transform:translate(9px,-9px)}}
+.wglow{animation:pulse 2.4s ease-in-out infinite}
+
+/* отпускание духа */
+.spirit{position:fixed;left:0;top:0;width:96px;height:116px;margin:-58px 0 0 -48px;z-index:45;pointer-events:none;
+  filter:drop-shadow(0 0 12px rgba(210,225,255,.9)) drop-shadow(0 0 36px rgba(160,190,255,.6))}
+.spirit svg{width:100%;height:100%;display:block;animation:gsway 1.1s ease-in-out infinite alternate}
+.spark{position:fixed;left:0;top:0;width:6px;height:6px;margin:-3px 0 0 -3px;border-radius:50%;z-index:44;pointer-events:none;
+  background:#eef4ff;box-shadow:0 0 8px 2px rgba(180,205,255,.8)}
+.moon.flash{box-shadow:0 0 120px 50px rgba(225,235,255,.65),0 0 300px 140px rgba(200,215,255,.25);transition:box-shadow .4s}
 
 /* ---------- интерфейс ---------- */
 .top{position:fixed;top:0;left:0;right:0;height:68px;z-index:10;display:flex;align-items:center;gap:12px;padding:0 22px;
@@ -162,6 +174,20 @@ body.drawer-open .drawer{transform:none}
 .lessons li.hl{border-color:rgba(255,207,107,.55);background:rgba(242,140,40,.12)}
 .lessons .n{flex:none;font-weight:800;color:var(--accent2);min-width:42px}
 .lessons .tx{flex:1;word-break:break-word}
+.lq{display:block;font-size:13px;line-height:1.3;color:var(--muted);margin-bottom:3px}
+.release{margin-top:22px;padding-top:18px;border-top:1px solid var(--line)}
+.release .btn{width:100%;background:linear-gradient(rgba(170,195,255,.2),rgba(120,140,230,.08));border-color:rgba(190,210,255,.4);color:#e4ecff}
+.release .btn:hover{box-shadow:0 0 22px rgba(170,195,255,.3)}
+.btn:disabled{opacity:.45;cursor:not-allowed;box-shadow:none!important}
+.released{margin-top:22px;padding:16px;border-radius:14px;background:rgba(170,195,255,.08);border:1px solid rgba(190,210,255,.25)}
+.released .r-h{font-weight:800;color:#cfe0ff;margin-bottom:6px;font-size:15px}
+.released .r-tx{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:21px;line-height:1.3}
+.fortune-card{text-align:center;padding:36px 32px 28px}
+.fc-ico{font-size:40px;line-height:1;margin-bottom:10px}
+.fc-kicker{color:var(--muted);font-size:15px;margin:0 24px 16px}
+.fc-text{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:500;font-size:clamp(24px,4vw,32px);line-height:1.25;
+  color:var(--accent2);text-shadow:0 0 24px rgba(242,140,40,.35);margin-bottom:22px}
+.fortune-card .card-actions{justify-content:center}
 .lessons .del{flex:none;border:0;background:none;color:var(--muted);opacity:.5;font-size:16px;padding:0 4px}
 .lessons .del:hover{opacity:1;color:#ff8f7a}
 .no-lessons{color:var(--muted);font-size:15px;padding:12px;border:1px dashed var(--line);border-radius:12px}
@@ -221,6 +247,8 @@ body.garden-on .garden{opacity:1;pointer-events:auto;transform:translateX(-50%)}
 .g-grave li{font-size:15px;line-height:1.35;padding-left:24px;position:relative}
 .g-grave li::before{content:"🎃";position:absolute;left:0;font-size:13px;top:1px}
 .g-grave .none{color:var(--muted);font-style:italic}
+.g-grave .gq{display:block;font-size:12.5px;color:var(--muted)}
+.g-grave .gf{margin-top:6px;font-family:'Cormorant Garamond',serif;font-style:italic;font-size:17px;color:#cfe0ff}
 body.garden-on #row{overflow:hidden}
 body.garden-on #rowInner{position:absolute;left:50%;padding:0 40px;transition:transform 1.2s cubic-bezier(.3,.8,.3,1)}
 body.garden-on .moon{box-shadow:0 0 80px 30px rgba(255,226,150,.45),0 0 260px 120px rgba(255,200,120,.16)}
@@ -278,6 +306,9 @@ body.garden-on .top .hide-g{display:none}
     </linearGradient>
     <radialGradient id="glow">
       <stop offset="0" stop-color="#ffd27a" stop-opacity=".95"/><stop offset=".45" stop-color="#ff8a1f" stop-opacity=".35"/><stop offset="1" stop-color="#ff8a1f" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="wispGlow">
+      <stop offset="0" stop-color="#f4f8ff" stop-opacity=".95"/><stop offset=".35" stop-color="#bcd4ff" stop-opacity=".45"/><stop offset="1" stop-color="#9ab8ff" stop-opacity="0"/>
     </radialGradient>
     <radialGradient id="candleGlow">
       <stop offset="0" stop-color="#ffd27a" stop-opacity=".7"/><stop offset="1" stop-color="#ffb347" stop-opacity="0"/>
@@ -403,6 +434,16 @@ body.garden-on .top .hide-g{display:none}
   </form>
 </div>
 
+<div class="modal" id="fortuneModal">
+  <div class="card fortune-card" role="dialog" aria-labelledby="fcText">
+    <button type="button" class="x" data-close>×</button>
+    <div class="fc-ico">🕊</div>
+    <div class="fc-kicker" id="fcKicker"></div>
+    <div class="fc-text" id="fcText"></div>
+    <div class="card-actions"><button type="button" class="btn primary" data-close>🕯 Спасибо, дух</button></div>
+  </div>
+</div>
+
 <div class="tip" id="tip"></div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
@@ -482,11 +523,37 @@ const GREENS = [
   ['#163a30','#26624a','#317554','#5fa77a']
 ];
 // формы кроны: шар, вытянутая (тополь), облако
+// side — боковые ветви прямо из ствола: [доля высоты ствола, доля длины ствола]; sideA — их наклон
 const CROWNS = {
-  ball:  { trunk: 210, ang: .1,  spread0: .6,  spread: .48, clamp: 1.15, len: [.63, .08], kids3: .3,  R: [0, 40, 34, 28, 22], sx: 1,    sy: 1,    puffs: 4, ring: [.1, .55] },
-  tall:  { trunk: 175, ang: .05, spread0: .26, spread: .17, clamp: .4,   len: [.74, .06], kids3: .15, R: [0, 26, 22, 18, 15], sx: .9,   sy: 1.8,  puffs: 4, ring: [.1, .5] },
-  cloud: { trunk: 185, ang: .14, spread0: .75, spread: .5,  clamp: 1.25, len: [.6, .06],  kids3: .4,  R: [0, 34, 29, 24, 19], sx: 1.35, sy: .8,   puffs: 6, ring: [.45, .8] }
+  ball:  { trunk: 175, ang: .1,  spread0: .72, spread: .52, clamp: 1.25, len: [.66, .08], kids3: .35, R: [0, 40, 34, 28, 22], sx: 1,    sy: 1,    puffs: 4, ring: [.1, .55],
+           side: [[.4, .5], [.62, .44]], sideA: 1.05 },
+  tall:  { trunk: 150, ang: .05, spread0: .3,  spread: .2,  clamp: .5,   len: [.76, .06], kids3: .2,  R: [0, 26, 22, 18, 15], sx: .9,   sy: 1.8,  puffs: 4, ring: [.1, .5],
+           side: [[.34, .4], [.54, .36], [.74, .3]], sideA: .5 },
+  cloud: { trunk: 150, ang: .14, spread0: .88, spread: .56, clamp: 1.35, len: [.64, .06], kids3: .45, R: [0, 34, 29, 24, 19], sx: 1.35, sy: .8,   puffs: 6, ring: [.45, .8],
+           side: [[.42, .56], [.64, .48]], sideA: 1.15 }
 };
+const FORTUNES = [
+  'То, что ты здесь закопал(а), удобрит то, что вырастет завтра.',
+  'Скоро тебе встретится идея, ради которой стоило освободить место.',
+  'Твой опыт уже работает на тебя — даже когда ты об этом не помнишь.',
+  'Ближайший месяц принесёт маленькую победу. Не пропусти её — отпразднуй.',
+  'Дух видел, как ты старался(-ась). Он гордится тобой.',
+  'Время, сэкономленное на мёртвом проекте, вернётся к тебе живым.',
+  'Кто-то рядом скоро попросит твоего совета. Тебе есть что сказать.',
+  'Лучшее, что ты сделаешь, ещё не начато. И это хорошая новость.',
+  'Не каждое семечко должно стать деревом. Твоё стало уроком — а это ценнее.',
+  'Звёзды говорят: следующий понедельник действительно наступит. И ты будешь готов(а).',
+  'Ты стал(а) на один проект мудрее. Это навсегда.',
+  'Смелость начать ещё раз — уже половина успеха. Вторая половина у тебя уже есть.',
+  'Тыквы, выросшие здесь, осветят чью-то дорогу. Возможно, твою.',
+  'В новом году одна твоя «безумная» идея окажется гениальной.',
+  'Отпусти — и освободившиеся руки найдут дело по душе.',
+  'Неудача — это черновик. Чистовик уже ждёт тебя.',
+  'Скоро ты удивишься тому, как многому научился(-ась).',
+  'Дух уносит с собой вину и сожаления. Оставляет только опыт.',
+  'Тебя ждёт проект, который захочется доделать. Узнаешь его по огоньку в глазах.',
+  'Там, где закончилось одно, уже прорастает другое. Присмотрись.'
+];
 
 const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -516,12 +583,12 @@ const okTs = v => Number.isFinite(v) && v > 0 && v < Date.now() + 864e5;
 function cleanGrave(r){
   if (!r || !okId(r.id) || !okTs(r.ts)) return null;
   return { id: r.id, owner: S(r.owner, 60), name: S(r.name, 80) || 'безымянный проект', years: S(r.years, 30),
-    cause: S(r.cause, 100), epitaph: S(r.epitaph, 140), created: Number.isFinite(r.created) ? r.created : r.ts,
+    cause: S(r.cause, 100), epitaph: S(r.epitaph, 140), fortune: S(r.fortune, 200), created: Number.isFinite(r.created) ? r.created : r.ts,
     ts: r.ts, by: S(r.by, 48), ...(r.del ? { del: true } : {}) };
 }
 function cleanLesson(r){
   if (!r || !okId(r.id) || !okId(r.graveId) || !okTs(r.ts)) return null;
-  return { id: r.id, graveId: r.graveId, text: S(r.text, 300), created: Number.isFinite(r.created) ? r.created : r.ts,
+  return { id: r.id, graveId: r.graveId, text: S(r.text, 300), q: S(r.q, 200), created: Number.isFinite(r.created) ? r.created : r.ts,
     ts: r.ts, by: S(r.by, 48), ...(r.del ? { del: true } : {}) };
 }
 function mergeRec(kind, r){
@@ -552,7 +619,7 @@ function rebuildView(){
     map.set(g.id, { ...v, lessons: [] });
   }
   for (const l of Object.values(db.lessons).filter(l => !l.del).sort(byCreated)){
-    map.get(l.graveId)?.lessons.push({ id: l.id, text: l.text });
+    map.get(l.graveId)?.lessons.push({ id: l.id, text: l.text, q: l.q });
   }
   state = { graves: [...map.values()] };
 }
@@ -604,7 +671,7 @@ function commit(recs, clear){
 const visDepth = n => n <= 0 ? -1 : n === 1 ? 1 : n <= 3 ? 2 : n <= 6 ? 3 : 4;
 const scaleFor = n => n <= 0 ? .8 : .8 + .2 * Math.min(1, (n - 1) / 8);
 const treeT = s => `translate(${BX}px,${BY}px) scale(${s}) translate(${-BX}px,${-BY}px)`;
-const hasFoliage = (vis, d) => d >= 1 && (d === vis || (vis >= 2 && d === vis - 1));
+const hasFoliage = (vis, d) => d >= 1 && d <= vis && d >= vis - 2;
 
 function getTree(g){
   if (trees.has(g.id)) return trees.get(g.id);
@@ -630,6 +697,15 @@ function getTree(g){
       let a = ang + (k / (kids - 1) - .5) * 2 * spread + (rnd() - .5) * .3 * (spread / .46);
       a = Math.max(-C.clamp, Math.min(C.clamp, a)) * .96;
       grow(x2, y2, a, len * (C.len[0] + rnd() * C.len[1]), d + 1);
+    }
+    // боковые ветви по стволу, чтобы крона спускалась ниже и ствол не стоял голым
+    if (d === 0){
+      let side = rnd() < .5 ? -1 : 1;
+      for (const [t, l] of C.side){
+        const u = 1 - t, px = u * u * x + 2 * u * t * mx + t * t * x2, py = u * u * y + 2 * u * t * my + t * t * y2;
+        grow(px, py, ang + side * (C.sideA + (rnd() - .5) * .25), len * l * (.9 + rnd() * .2), 2);
+        side = -side;
+      }
     }
   })(BX, BY, -C.ang + (rnd() - .5) * .1, C.trunk, 0);
 
@@ -792,13 +868,15 @@ function graveSVG(g, o){
       if (b.depth === 0) tr += `<path class="trunk${isNew ? ' new' : ''}" d="${tree.trunk}" style="animation-delay:${delay}s"/>`;
       else tr += `<path class="b${isNew ? ' new' : ''}" pathLength="1" d="${b.d}" stroke-width="${b.w}" style="animation-delay:${f1(delay)}s"/>`;
     }
+    // крона полупрозрачная целиком: сквозь неё видны ветви и надпись на камне
+    tr += `<g class="crown">`;
     for (let layer = 0; layer < 3; layer++) for (const nd of tree.nodes){
       if (!hasFoliage(vis, nd.depth)) continue;
       const isNew = !hasFoliage(pvis, nd.depth);
       const delay = !isNew ? 0 : nd.depth > pvis ? (nd.depth - pvis - 1) * STEP + .6 : .1;
       tr += `<g class="leafc${isNew ? ' new' : ''}" style="animation-delay:${f1(delay)}s">${nd.leaves[layer]}</g>`;
     }
-    tr += `</g>`;
+    tr += `</g></g>`;
   }
 
   h += `<g clip-path="url(#riseClip)"><g class="${o.rise ? 'riser' : ''}"><g class="stoneg">${stoneSVG(g)}</g></g></g>`;
@@ -811,6 +889,8 @@ function graveSVG(g, o){
     grass += `<path d="M${x} ${y} l-3 -9 M${x} ${y} l1 -12 M${x} ${y} l4 -8"/>`;
   }
   h += `<g stroke="#3a5a2a" stroke-width="1.6" stroke-linecap="round" fill="none">${grass}</g>`;
+  // след отпущенного духа: блуждающий огонёк над камнем
+  if (g.fortune) h += `<g class="wisp"><circle class="wglow" cx="190" cy="258" r="30" fill="url(#wispGlow)"/><circle cx="190" cy="258" r="4.5" fill="#fbfdff"/></g>`;
   h += tr;
   if (n === 0){
     h += `<g class="sprout"><path d="M${BX} ${BY} q-1 -10 2 -19" stroke="#6fae4a" stroke-width="2.6" fill="none" stroke-linecap="round"/>
@@ -886,7 +966,7 @@ function renderMeta(){
 function renderDrawer(){
   const g = byId(selId), d = $('#drawer');
   if (!g){ d.innerHTML = ''; return; }
-  const ls = g.lessons.map((l, i) => `<li data-i="${i}" class="${hlIdx === i ? 'hl' : ''}"><span class="n">🎃${i + 1}</span><span class="tx">${esc(l.text)}</span>
+  const ls = g.lessons.map((l, i) => `<li data-i="${i}" class="${hlIdx === i ? 'hl' : ''}"><span class="n">🎃${i + 1}</span><span class="tx">${l.q ? `<span class="lq">💭 ${esc(l.q)}</span>` : ''}${esc(l.text)}</span>
       <button class="del" data-del="${i}" title="Удалить урок">✕</button></li>`).join('');
   d.innerHTML = `<button class="x" id="dClose" aria-label="Закрыть">×</button>
     <div class="d-rip">R · I · P</div>
@@ -904,7 +984,11 @@ function renderDrawer(){
     <div class="q"><span>💭 ${esc(QUESTIONS[qIdx])}</span><button id="qNext" title="Другой вопрос">↻</button></div>
     <form class="lform" id="lessonForm"><textarea id="lessonInput" maxlength="160" placeholder="Например: делиться промежуточным результатом раньше"></textarea>
       <button class="btn primary" type="submit">🌱 Вырастить ветку</button></form>
-    <div class="hint">Enter — добавить · Shift+Enter — перенос строки</div>`;
+    <div class="hint">Enter — добавить · Shift+Enter — перенос строки</div>
+    ${g.fortune
+      ? `<div class="released"><div class="r-h">🕊 Дух проекта отпущен и оставил послание</div><div class="r-tx">«${esc(g.fortune)}»</div></div>`
+      : `<div class="release"><button class="btn" id="dRelease"${g.lessons.length ? '' : ' disabled'}>🕊 Отпустить</button>
+         <div class="hint">${g.lessons.length ? 'Когда всё сказано — отпусти дух проекта. На прощание он оставит послание.' : 'Сначала вырасти хотя бы одну тыкву-урок.'}</div></div>`}`;
 }
 function select(id, focus){
   selId = id; hlIdx = null;
@@ -935,7 +1019,8 @@ function setHl(i){
 function addLesson(text){
   let g = byId(selId); text = text.trim();
   if (!g || !text) return;
-  commit([['lessons', { id: uid(), graveId: g.id, text }]]);
+  const q = QUESTIONS[qIdx];
+  commit([['lessons', { id: uid(), graveId: g.id, text, q }]]);
   g = byId(g.id);
   drawGrave(g, { anim: true });
   Sound.chime();
@@ -947,10 +1032,76 @@ function addLesson(text){
   setTimeout(() => {
     const f = plotOf(g.id).querySelector(`.fruit[data-i="${idx}"] .pk`);
     if (!f) return;
-    showTipAt(f, `<b>🎃 ${idx + 1}.</b> ${esc(text)}`);
+    showTipAt(f, lessonTip(idx, { text, q }));
     setTimeout(hideTip, 4200);
   }, 1700);
 }
+const lessonTip = (i, l, extra = '') =>
+  `${l.q ? `<span style="color:var(--muted);font-size:13px">💭 ${esc(l.q)}</span><br>` : ''}<b>🎃 ${i + 1}.</b> ${esc(l.text)}${extra}`;
+
+/* ---------- отпустить дух ---------- */
+let releasing = false;
+function release(id){
+  const g = byId(id);
+  if (!g || g.fortune || !g.lessons.length || releasing) return;
+  releasing = true;
+  const btn = $('#dRelease'); if (btn) btn.disabled = true;
+  const fortune = pick(FORTUNES);
+  const r = plotOf(id).getBoundingClientRect();
+  Sound.release();
+  flySpirit(r.left + r.width * 190 / 380, r.top + r.height * 470 / 600, () => {
+    releasing = false;
+    const cur = db.graves[id];
+    if (!cur || cur.del) return;
+    if (!cur.fortune){ commit([['graves', { ...cur, fortune }]]); drawGrave(byId(id)); }
+    if (selId === id) renderDrawer();
+    showFortune(byId(id));
+  });
+}
+function flySpirit(x, y, done){
+  const el = document.createElement('div');
+  el.className = 'spirit';
+  el.innerHTML = `<svg viewBox="-30 -34 60 72" aria-hidden="true">
+    <path d="M-22 30 Q-23 -28 0 -28 Q23 -28 22 30 L15 23 L8 31 L0 23 L-8 31 L-15 23Z" fill="#eef4ff" opacity=".92"/>
+    <ellipse cx="-7.5" cy="-7" rx="3" ry="4.2" fill="#1a1530"/><ellipse cx="7.5" cy="-7" rx="3" ry="4.2" fill="#1a1530"/>
+    <path d="M-5 4 q5 5 10 0" stroke="#1a1530" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <ellipse cx="-13" cy="1" rx="3.5" ry="2" fill="#ffb3c0" opacity=".55"/><ellipse cx="13" cy="1" rx="3.5" ry="2" fill="#ffb3c0" opacity=".55"/></svg>`;
+  document.body.appendChild(el);
+  // дух поднимается из могилы и улетает к луне
+  const mr = $('.moon').getBoundingClientRect(), mx = mr.left + mr.width / 2, my = mr.top + mr.height / 2;
+  const K = [0, .14, .32, .52, .74, 1], SC = [.35, 1.1, 1.25, 1.1, .75, .15], OP = [0, 1, 1, 1, .95, 0];
+  const frames = K.map((k, i) => {
+    const px = x + (mx - x) * k * k + Math.sin(k * 10) * 45 * (1 - k), py = y + (my - y) * (1 - (1 - k) * (1 - k));
+    return { transform: `translate(${f1(px)}px,${f1(py)}px) scale(${SC[i]})`, opacity: OP[i] };
+  });
+  const dur = reduced ? 1400 : 3600;
+  el.animate(frames, { duration: dur, easing: 'linear', fill: 'forwards' });
+  const sparks = reduced ? 0 : setInterval(() => {
+    const r = el.getBoundingClientRect(), s = document.createElement('div');
+    s.className = 'spark';
+    const sx = r.left + r.width / 2 + (Math.random() - .5) * 40, sy = r.top + r.height * .75;
+    document.body.appendChild(s);
+    const life = 900 + Math.random() * 600;
+    s.animate([{ transform: `translate(${sx}px,${sy}px) scale(1)`, opacity: .95 },
+               { transform: `translate(${sx + (Math.random() - .5) * 60}px,${sy + 40 + Math.random() * 60}px) scale(.2)`, opacity: 0 }],
+      { duration: life, easing: 'ease-out', fill: 'forwards' });
+    setTimeout(() => s.remove(), life);
+  }, 55);
+  // завершаем по таймеру, а не по onfinish: так надёжнее и в фоновой вкладке
+  setTimeout(() => {
+    clearInterval(sparks); el.remove();
+    const moon = $('.moon'); moon.classList.add('flash'); setTimeout(() => moon.classList.remove('flash'), 900);
+    setTimeout(done, 350);
+  }, dur);
+}
+const fortuneModal = $('#fortuneModal');
+function showFortune(g){
+  if (!g?.fortune) return;
+  $('#fcKicker').textContent = `Дух проекта «${g.name}» улетел к луне и оставил тебе послание:`;
+  $('#fcText').textContent = `«${g.fortune}»`;
+  fortuneModal.classList.add('open');
+}
+fortuneModal.addEventListener('click', e => { if (e.target === fortuneModal || e.target.closest('[data-close]')) fortuneModal.classList.remove('open'); });
 
 /* ---------- подсказка ---------- */
 const tip = $('#tip');
@@ -1017,7 +1168,8 @@ function openGarden(){
         <div class="g-stat"><b>${people}</b><span>скорбящих</span></div>
       </div></div>
     <div class="g-cols">${graves.map(g => `<div class="g-grave"><h4>🪦 ${esc(g.name)} ${g.owner ? `<span>· ${esc(g.owner)}</span>` : ''}</h4>
-      <ul>${g.lessons.length ? g.lessons.map(l => `<li>${esc(l.text)}</li>`).join('') : '<li class="none">дерево ещё не проросло</li>'}</ul></div>`).join('')}</div>`;
+      <ul>${g.lessons.length ? g.lessons.map(l => `<li>${l.q ? `<span class="gq">${esc(l.q)}</span>` : ''}${esc(l.text)}</li>`).join('') : '<li class="none">дерево ещё не проросло</li>'}</ul>
+      ${g.fortune ? `<div class="gf">🕊 «${esc(g.fortune)}»</div>` : ''}</div>`).join('')}</div>`;
   document.body.classList.add('garden-on');
   $('#gardenBtn').textContent = '🪦 На кладбище';
   layoutGarden();
@@ -1051,7 +1203,7 @@ inner.addEventListener('mouseover', e => {
   const f = e.target.closest('.fruit'), p = e.target.closest('.plot');
   if (!f || !p) return;
   const g = byId(p.dataset.id), i = +f.dataset.i, l = g?.lessons[i];
-  if (l) showTipAt(f.querySelector('.pk'), `<b>🎃 ${i + 1}.</b> ${esc(l.text)}<br><span style="color:var(--muted);font-size:13px">${esc(g.name)}</span>`);
+  if (l) showTipAt(f.querySelector('.pk'), lessonTip(i, l, `<br><span style="color:var(--muted);font-size:13px">🪦 ${esc(g.name)}</span>`));
 });
 inner.addEventListener('mouseout', e => { if (e.target.closest('.fruit') && !e.relatedTarget?.closest?.('.fruit')) hideTip(); });
 row.addEventListener('wheel', e => {
@@ -1064,6 +1216,7 @@ drawer.addEventListener('click', e => {
   const g = byId(selId); if (!g) return;
   if (e.target.closest('#dClose')) return closeDrawer();
   if (e.target.closest('#dEdit')) return openBurial(g.id);
+  if (e.target.closest('#dRelease')) return release(g.id);
   if (e.target.closest('#qNext')){ qIdx = (qIdx + 1) % QUESTIONS.length; drawer.querySelector('.q span').textContent = '💭 ' + QUESTIONS[qIdx]; return; }
   if (e.target.closest('#dDig')){
     if (!confirm(`Выкопать «${g.name}»? Надгробие, дерево и уроки пропадут.`)) return;
@@ -1102,9 +1255,9 @@ $('#importFile').addEventListener('change', async e => {
     for (const g of s.graves){
       const id = okId(g.id) ? g.id : uid();
       recs.push(['graves', { id, owner: S(g.owner, 60), name: S(g.name, 80) || 'безымянный проект', years: S(g.years, 30),
-        cause: S(g.cause, 100), epitaph: S(g.epitaph, 140) }]);
+        cause: S(g.cause, 100), epitaph: S(g.epitaph, 140), fortune: S(g.fortune, 200) }]);
       for (const l of Array.isArray(g.lessons) ? g.lessons : [])
-        if (S(l?.text, 300)) recs.push(['lessons', { id: okId(l.id) ? l.id : uid(), graveId: id, text: S(l.text, 300) }]);
+        if (S(l?.text, 300)) recs.push(['lessons', { id: okId(l.id) ? l.id : uid(), graveId: id, text: S(l.text, 300), q: S(l.q, 200) }]);
     }
     commit(recs, true); trees.clear(); rendered.clear(); closeDrawer(); renderAll();
   } catch (err) { alert('Не получилось прочитать файл: нужен JSON, экспортированный отсюда.'); }
@@ -1115,7 +1268,8 @@ $('#resetBtn').addEventListener('click', () => {
 });
 document.addEventListener('keydown', e => {
   if (e.key !== 'Escape') return;
-  if (modal.classList.contains('open')) closeModal();
+  if (fortuneModal.classList.contains('open')) fortuneModal.classList.remove('open');
+  else if (modal.classList.contains('open')) closeModal();
   else if (document.body.classList.contains('garden-on')) closeGarden();
   else if (selId) closeDrawer();
 });
@@ -1234,6 +1388,16 @@ const Sound = (() => {
       if (!live()) return;
       const t = ac.currentTime;
       [86, 89, 93, 98].forEach((m, i) => bell(t + .9 + i * .09, mf(m), .16, sfx));
+    },
+    release(){
+      if (!live()) return;
+      const t = ac.currentTime;
+      // светлое восходящее арпеджио ре мажор и воздушный «вздох», уходящий вверх
+      [62, 66, 69, 74, 78, 81, 86, 90].forEach((m, i) => bell(t + .2 + i * .16, mf(m), .12, sfx));
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(420, t); o.frequency.exponentialRampToValueAtTime(1500, t + 3.2);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.05, t + .6); g.gain.linearRampToValueAtTime(0, t + 3.4);
+      o.connect(g).connect(verb); o.start(t); o.stop(t + 3.5);
     }
   };
 })();
@@ -1317,7 +1481,7 @@ function receive(data){
   save();
   applyRemote(prev);
 }
-const FIELDS = ['owner', 'name', 'years', 'cause', 'epitaph'];
+const FIELDS = ['owner', 'name', 'years', 'cause', 'epitaph', 'fortune'];
 function applyRemote(prev){
   rebuildView();
   const old = new Map(prev.graves.map(g => [g.id, g])), now = new Set(state.graves.map(g => g.id));
@@ -1341,6 +1505,7 @@ function applyRemote(prev){
     else if (FIELDS.some(f => o[f] !== g[f])) drawGrave(g);
     else continue;
     if (g.id === selId) selChanged = true;
+    if (g.fortune && !o.fortune) toast(`🕊 Дух проекта <b>«${esc(g.name)}»</b> отпущен. Послание: <i>«${esc(g.fortune)}»</i>`);
     if (g.lessons.length > o.lessons.length){
       chime = true;
       toast(`🎃 Новый урок на могиле <b>«${esc(g.name)}»</b>: ${esc(g.lessons[g.lessons.length - 1].text)}`);
