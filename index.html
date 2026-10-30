@@ -1,0 +1,1389 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Кладбище проектов</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,700;1,500&family=Manrope:wght@400;600;700;800&family=Ruslan+Display&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0916; --ink:#f1e9d8; --muted:#a69fbd; --accent:#f28c28; --accent2:#ffcf6b;
+  --panel:rgba(17,14,33,.92); --line:rgba(255,255,255,.12); --earth:#120e1b;
+  --plotH:min(80vh,780px); --groundH:calc(var(--plotH) * .12); --drawerW:430px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);
+  font-family:'Manrope',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button{font:inherit;color:inherit;cursor:pointer}
+
+/* ---------- сцена ---------- */
+.sky{position:fixed;inset:0;z-index:0;
+  background:radial-gradient(ellipse 60% 50% at 80% 12%,#3b2d6e 0%,transparent 60%),
+             linear-gradient(#191239 0%,#130e2c 45%,#0b0918 100%)}
+#stars{position:fixed;inset:0;width:100%;height:100%;z-index:0}
+.moon{position:fixed;top:9vh;right:12vw;width:17vh;height:17vh;border-radius:50%;z-index:1;
+  background:radial-gradient(circle at 36% 34%,#fffbea 0%,#f7e4aa 55%,#e0bf6c 100%);
+  box-shadow:0 0 60px 18px rgba(255,226,150,.33),0 0 220px 90px rgba(255,200,120,.10);transition:box-shadow 2s}
+.moon::before{content:"";position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle at 62% 30%,rgba(170,140,70,.35) 0 7%,transparent 8%),
+             radial-gradient(circle at 30% 64%,rgba(170,140,70,.28) 0 10%,transparent 11%),
+             radial-gradient(circle at 70% 70%,rgba(170,140,70,.25) 0 5%,transparent 6%),
+             radial-gradient(circle at 45% 45%,rgba(170,140,70,.15) 0 4%,transparent 5%)}
+.cloud{position:fixed;z-index:1;height:7vh;width:38vw;border-radius:50%;pointer-events:none;
+  background:radial-gradient(ellipse at center,rgba(70,58,115,.75) 0%,rgba(40,32,75,.35) 45%,transparent 70%);
+  filter:blur(5px);animation:drift linear infinite}
+@keyframes drift{from{transform:translateX(-45vw)}to{transform:translateX(120vw)}}
+.hills{position:fixed;left:0;width:100%;height:40vh;bottom:calc(var(--groundH) - 2px);z-index:1;pointer-events:none}
+.ground{position:fixed;left:0;right:0;bottom:0;height:calc(var(--groundH) + 2px);z-index:1;
+  background:linear-gradient(#18121f,#0b0911)}
+.fog{position:fixed;left:0;bottom:-2vh;width:300%;height:24vh;z-index:3;pointer-events:none;
+  background:
+   radial-gradient(ellipse 9% 55% at 5% 70%,rgba(205,205,240,.16),transparent 70%),
+   radial-gradient(ellipse 12% 50% at 18% 80%,rgba(205,205,240,.13),transparent 70%),
+   radial-gradient(ellipse 10% 60% at 33% 75%,rgba(205,205,240,.15),transparent 70%),
+   radial-gradient(ellipse 13% 50% at 50% 80%,rgba(205,205,240,.12),transparent 70%),
+   radial-gradient(ellipse 9% 55% at 66% 70%,rgba(205,205,240,.16),transparent 70%),
+   radial-gradient(ellipse 12% 50% at 82% 80%,rgba(205,205,240,.13),transparent 70%),
+   radial-gradient(ellipse 10% 60% at 97% 75%,rgba(205,205,240,.15),transparent 70%);
+  animation:fog 80s linear infinite}
+.fog.f2{bottom:-6vh;height:18vh;opacity:.8;animation-duration:55s;animation-direction:reverse}
+@keyframes fog{from{transform:translateX(0)}to{transform:translateX(-66.66%)}}
+.ff{position:fixed;width:5px;height:5px;border-radius:50%;z-index:3;pointer-events:none;background:#fff3a0;
+  box-shadow:0 0 10px 3px rgba(255,230,120,.65);
+  animation:ffMove var(--d) ease-in-out infinite alternate,ffBlink var(--b) ease-in-out infinite}
+@keyframes ffMove{to{transform:translate(var(--dx),var(--dy))}}
+@keyframes ffBlink{0%,100%{opacity:.1}50%{opacity:1}}
+.bat{position:fixed;left:0;width:46px;z-index:2;pointer-events:none;animation:batFly var(--d) linear infinite;animation-delay:var(--delay)}
+.bat svg{display:block;animation:flap .22s ease-in-out infinite alternate}
+@keyframes flap{from{transform:scaleY(1)}to{transform:scaleY(.35)}}
+@keyframes batFly{0%{transform:translate(-8vw,0)}25%{transform:translate(25vw,-5vh)}50%{transform:translate(55vw,3vh)}75%{transform:translate(82vw,-4vh)}100%{transform:translate(112vw,1vh)}}
+
+/* ---------- ряд могил ---------- */
+#row{position:fixed;left:0;right:0;top:0;bottom:0;z-index:2;overflow-x:auto;overflow-y:hidden;scrollbar-width:thin;scrollbar-color:#4a3d6b transparent}
+#rowInner{display:flex;align-items:flex-end;height:100%;width:max-content;margin:0 auto;padding:0 6vw;
+  transition:padding .5s ease}
+body.drawer-open #rowInner{padding-right:calc(var(--drawerW) + 6vw)}
+.plot{height:var(--plotH);aspect-ratio:380/600;flex:none;margin:0 -26px;cursor:pointer;position:relative}
+.plot svg{width:100%;height:100%;overflow:visible;display:block}
+.plot.sel .stoneg{filter:url(#selGlow)}
+.empty{position:fixed;left:50%;bottom:calc(var(--groundH) + 16vh);transform:translateX(-50%);z-index:3;text-align:center;
+  color:var(--muted);font-size:20px;display:none}
+.empty b{display:block;font-family:'Ruslan Display';color:var(--accent2);font-size:30px;font-weight:400;margin-bottom:10px}
+body.is-empty .empty{display:block}
+
+/* svg: дерево */
+.tree{transition:transform 1.2s cubic-bezier(.3,.8,.3,1)}
+.trunk{fill:#2c2019}
+.trunk.new{transform-box:view-box;transform-origin:302px 534px;animation:trunkUp 1s cubic-bezier(.2,.8,.2,1) both}
+@keyframes trunkUp{from{transform:scaleY(0)}to{transform:scaleY(1)}}
+.b{fill:none;stroke:#2f2219;stroke-linecap:round}
+.b.new{stroke-dasharray:1;stroke-dashoffset:1;animation:draw .75s ease-out forwards}
+@keyframes draw{to{stroke-dashoffset:0}}
+.leafc{transform-box:fill-box;transform-origin:center}
+.leafc.new{animation:pop .55s cubic-bezier(.3,1.6,.5,1) both}
+@keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+.pre .tree,.pre .fruit{visibility:hidden}
+.fruit{cursor:help}
+.fruit .pop{transform-box:fill-box;transform-origin:center bottom;animation:pop .7s cubic-bezier(.3,1.7,.5,1) both}
+.fruit .hlw{transform-box:fill-box;transform-origin:center;transition:transform .25s}
+.fruit.hl .hlw{transform:scale(1.45)}
+.glowc{animation:pulse 2.8s ease-in-out infinite}
+@keyframes pulse{0%,100%{opacity:.55}50%{opacity:1}}
+.fnum{font:800 9.5px 'Manrope',sans-serif;fill:#3a1c05}
+.sprout{transform-box:fill-box;transform-origin:center bottom;animation:sway 3s ease-in-out infinite alternate}
+@keyframes sway{from{transform:rotate(-5deg)}to{transform:rotate(5deg)}}
+
+/* svg: камень */
+.riser{animation:rise 1.8s cubic-bezier(.25,.9,.3,1) both}
+@keyframes rise{0%{transform:translateY(250px)}8%{transform:translateY(246px) translateX(2px)}16%{transform:translateY(240px) translateX(-2px)}70%{transform:translateY(-7px)}85%{transform:translateY(2px)}100%{transform:translateY(0)}}
+.st{font-family:'Cormorant Garamond',serif;text-anchor:middle}
+.lo .st{fill:#272930}
+.hi .st{fill:rgba(255,255,255,.27)}
+.t-name{font-weight:700}
+.t-rip{letter-spacing:3px;font-weight:700}
+.t-cause,.t-epi{font-style:italic}
+.dirt circle{animation:dirt 1.5s ease-out both}
+@keyframes dirt{0%{transform:translate(0,0);opacity:1}45%{transform:translate(calc(var(--dx)*1px),calc(var(--dy)*1px));opacity:1}100%{transform:translate(calc(var(--dx)*1.8px),24px);opacity:0}}
+.ghost{animation:ghostUp 4.2s ease-out both;animation-delay:1.3s}
+@keyframes ghostUp{0%{transform:translateY(0);opacity:0}18%{opacity:.9}100%{transform:translateY(-340px);opacity:0}}
+.ghost g{animation:gsway 1.1s ease-in-out infinite alternate}
+@keyframes gsway{from{transform:translateX(-10px)}to{transform:translateX(10px)}}
+.flame{transform-box:fill-box;transform-origin:center bottom;animation:flick .18s ease-in-out infinite alternate}
+@keyframes flick{from{transform:scale(1,1)}to{transform:scale(.85,1.15)}}
+.cglow{animation:pulse 1.7s ease-in-out infinite}
+
+/* ---------- интерфейс ---------- */
+.top{position:fixed;top:0;left:0;right:0;height:68px;z-index:10;display:flex;align-items:center;gap:12px;padding:0 22px;
+  background:linear-gradient(rgba(8,6,18,.85),rgba(8,6,18,0))}
+.brand{font-family:'Ruslan Display',serif;font-size:27px;color:var(--accent2);text-shadow:0 0 18px rgba(242,140,40,.55);white-space:nowrap}
+.stats{margin-left:6px;color:var(--muted);font-weight:600;font-size:15px;white-space:nowrap}
+.online{margin-left:4px;padding:3px 10px;border:1px solid var(--line);border-radius:999px;color:var(--muted);font-weight:600;font-size:13px;
+  white-space:nowrap;cursor:default;transition:color .3s,border-color .3s}
+.online.on{color:#9fe08a;border-color:rgba(127,200,100,.45)}
+.spacer{flex:1}
+.btn{border:1px solid var(--line);background:rgba(30,25,55,.75);border-radius:12px;padding:10px 16px;font-weight:700;font-size:15px;
+  backdrop-filter:blur(6px);transition:transform .15s,background .2s,border-color .2s;white-space:nowrap}
+.btn:hover{background:rgba(50,40,85,.9);border-color:rgba(255,207,107,.4)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:linear-gradient(#f7a344,#d9661c);color:#1d0f04;border-color:transparent;box-shadow:0 0 22px rgba(242,140,40,.35)}
+.btn.primary:hover{filter:brightness(1.08)}
+.btn.ghostb{background:transparent}
+.menu{position:relative}
+.menu-pop{position:absolute;right:0;top:calc(100% + 8px);background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:6px;
+  min-width:220px;display:none;box-shadow:0 18px 40px rgba(0,0,0,.5)}
+.menu.open .menu-pop{display:block}
+.menu-pop button{display:block;width:100%;text-align:left;background:none;border:0;padding:10px 12px;border-radius:9px;font-size:14px}
+.menu-pop button:hover{background:rgba(255,255,255,.07)}
+.menu-pop .danger{color:#ff8f7a}
+
+.drawer{position:fixed;z-index:20;top:80px;right:16px;bottom:16px;width:var(--drawerW);max-width:calc(100vw - 32px);
+  background:var(--panel);border:1px solid var(--line);border-radius:20px;padding:24px 24px 20px;overflow:auto;
+  backdrop-filter:blur(10px);box-shadow:0 20px 60px rgba(0,0,0,.55);
+  transform:translateX(calc(100% + 30px));transition:transform .45s cubic-bezier(.3,.8,.3,1)}
+body.drawer-open .drawer{transform:none}
+.x{position:absolute;top:12px;right:12px;width:36px;height:36px;border-radius:10px;border:0;background:rgba(255,255,255,.06);font-size:20px;line-height:1}
+.x:hover{background:rgba(255,255,255,.12)}
+.d-rip{font-family:'Cormorant Garamond',serif;letter-spacing:5px;color:var(--muted);font-weight:700;font-size:14px}
+.d-name{font-family:'Cormorant Garamond',serif;font-size:30px;font-weight:700;line-height:1.1;margin:4px 40px 4px 0;word-break:break-word}
+.d-years{color:var(--muted);font-size:15px}
+.d-meta{margin:16px 0 0;display:grid;gap:8px;font-size:15px}
+.d-meta div{display:grid;grid-template-columns:120px 1fr;gap:8px}
+.d-meta dt{color:var(--muted)}
+.d-meta dd{margin:0}
+.d-actions{display:flex;gap:8px;margin-top:14px}
+.d-actions .btn{padding:7px 12px;font-size:13px}
+.d-h{margin:26px 0 4px;font-size:21px}
+.d-sub{color:var(--muted);font-size:14px;margin-bottom:12px}
+.lessons{list-style:none;margin:0;padding:0;display:grid;gap:8px}
+.lessons li{display:flex;gap:10px;align-items:flex-start;background:rgba(255,255,255,.045);border:1px solid transparent;border-radius:12px;
+  padding:10px 10px 10px 12px;font-size:17px;line-height:1.35;transition:border-color .2s,background .2s}
+.lessons li.hl{border-color:rgba(255,207,107,.55);background:rgba(242,140,40,.12)}
+.lessons .n{flex:none;font-weight:800;color:var(--accent2);min-width:42px}
+.lessons .tx{flex:1;word-break:break-word}
+.lessons .del{flex:none;border:0;background:none;color:var(--muted);opacity:.5;font-size:16px;padding:0 4px}
+.lessons .del:hover{opacity:1;color:#ff8f7a}
+.no-lessons{color:var(--muted);font-size:15px;padding:12px;border:1px dashed var(--line);border-radius:12px}
+.q{margin:16px 0 8px;font-size:14px;color:#cbbfe6;display:flex;gap:8px;align-items:flex-start}
+.q button{border:0;background:none;color:var(--muted);padding:0 2px}
+.lform textarea{width:100%;min-height:70px;resize:vertical}
+.lform .btn{width:100%;margin-top:8px}
+.hint{color:var(--muted);font-size:12px;margin-top:6px;text-align:center}
+input,textarea{font:inherit;color:var(--ink);background:rgba(0,0,0,.3);border:1px solid var(--line);border-radius:12px;padding:11px 13px;font-size:16px;outline:none}
+input:focus,textarea:focus{border-color:rgba(255,207,107,.6);box-shadow:0 0 0 3px rgba(242,140,40,.15)}
+
+.modal{position:fixed;inset:0;z-index:30;display:none;align-items:center;justify-content:center;background:rgba(4,3,10,.62);backdrop-filter:blur(3px);padding:16px}
+.modal.open{display:flex}
+.card{width:min(580px,100%);max-height:calc(100vh - 32px);overflow:auto;background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:28px;
+  box-shadow:0 30px 80px rgba(0,0,0,.6);position:relative;animation:cardIn .35s cubic-bezier(.3,1.3,.5,1)}
+@keyframes cardIn{from{transform:translateY(20px) scale(.97);opacity:0}}
+.card h2{margin:0 0 4px;font-family:'Ruslan Display',serif;font-weight:400;font-size:30px;color:var(--accent2)}
+.card .sub{color:var(--muted);margin-bottom:18px}
+.f{display:grid;gap:6px;margin-bottom:14px}
+.f label{font-size:13px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.f2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1px solid var(--line);background:rgba(255,255,255,.05);border-radius:999px;padding:5px 11px;font-size:13px}
+.chip:hover{border-color:rgba(255,207,107,.5);background:rgba(242,140,40,.12)}
+.epi-row{display:flex;gap:8px}
+.epi-row textarea{flex:1;min-height:58px;resize:vertical}
+.epi-row .btn{flex:none}
+.card-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:8px}
+
+.tip{position:fixed;z-index:50;max-width:340px;background:rgba(20,15,38,.96);border:1px solid rgba(255,207,107,.55);border-radius:14px;
+  padding:10px 14px;font-size:17px;line-height:1.35;pointer-events:none;opacity:0;transform:translate(-50%,calc(-100% - 14px)) scale(.96);
+  transition:opacity .2s,transform .2s;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.tip.show{opacity:1;transform:translate(-50%,calc(-100% - 14px))}
+.tip b{color:var(--accent2)}
+.toast{position:fixed;z-index:50;left:50%;bottom:24px;max-width:min(520px,calc(100vw - 32px));background:rgba(20,15,38,.96);
+  border:1px solid rgba(255,207,107,.55);border-radius:14px;padding:10px 16px;font-size:16px;line-height:1.35;pointer-events:none;
+  opacity:0;transform:translate(-50%,12px);transition:opacity .25s,transform .25s;box-shadow:0 10px 30px rgba(0,0,0,.5)}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+.toast b{color:var(--accent2)}
+
+/* ---------- сад уроков ---------- */
+.garden{position:fixed;z-index:15;top:78px;left:50%;transform:translateX(-50%) translateY(-20px);width:min(1180px,calc(100vw - 32px));
+  background:var(--panel);border:1px solid var(--line);border-radius:22px;padding:24px 28px;overflow:auto;opacity:0;pointer-events:none;
+  transition:opacity .6s,transform .6s;box-shadow:0 30px 80px rgba(0,0,0,.55)}
+body.garden-on .garden{opacity:1;pointer-events:auto;transform:translateX(-50%)}
+.g-head{display:flex;align-items:flex-end;gap:24px;flex-wrap:wrap;margin-bottom:18px}
+.g-title{font-family:'Ruslan Display',serif;font-size:40px;color:var(--accent2);text-shadow:0 0 22px rgba(242,140,40,.45);line-height:1}
+.g-sub{color:var(--muted);margin-top:6px}
+.g-stats{display:flex;gap:28px;margin-left:auto}
+.g-stat b{display:block;font-size:40px;font-weight:800;color:var(--ink);line-height:1}
+.g-stat span{color:var(--muted);font-size:13px}
+.g-cols{columns:300px;column-gap:28px}
+.g-grave{break-inside:avoid;margin-bottom:16px}
+.g-grave h4{margin:0 0 6px;font-size:16px;font-family:'Cormorant Garamond',serif;font-size:21px}
+.g-grave h4 span{font-family:'Manrope',sans-serif;font-size:13px;color:var(--muted);font-weight:600}
+.g-grave ul{margin:0;padding:0;list-style:none;display:grid;gap:4px}
+.g-grave li{font-size:15px;line-height:1.35;padding-left:24px;position:relative}
+.g-grave li::before{content:"🎃";position:absolute;left:0;font-size:13px;top:1px}
+.g-grave .none{color:var(--muted);font-style:italic}
+body.garden-on #row{overflow:hidden}
+body.garden-on #rowInner{position:absolute;left:50%;padding:0 40px;transition:transform 1.2s cubic-bezier(.3,.8,.3,1)}
+body.garden-on .moon{box-shadow:0 0 80px 30px rgba(255,226,150,.45),0 0 260px 120px rgba(255,200,120,.16)}
+.leaves{display:none}
+body.garden-on .leaves{display:block}
+.lf{position:fixed;top:-4vh;z-index:4;width:14px;height:9px;border-radius:0 80% 0 80%;background:var(--c);pointer-events:none;
+  animation:fall var(--d) linear infinite;animation-delay:var(--delay);opacity:.9}
+@keyframes fall{to{transform:translate(var(--dx),112vh) rotate(800deg)}}
+body.garden-on .top .hide-g{display:none}
+
+/* ---------- ворота ---------- */
+.intro{position:fixed;inset:0;z-index:40}
+.intro-dim{position:absolute;inset:0;background:rgba(5,4,12,.55);transition:opacity 1.6s}
+.gate{position:absolute;top:0;bottom:0;width:50.2%;transition:transform 2s cubic-bezier(.6,.05,.3,1)}
+.gate svg{width:100%;height:100%;display:block}
+.gate.l{left:0;transform-origin:left center}
+.gate.r{right:0;transform-origin:right center}
+.intro.open .gate.l{transform:perspective(1500px) rotateY(-100deg)}
+.intro.open .gate.r{transform:perspective(1500px) rotateY(100deg)}
+.intro.open .intro-dim{opacity:0}
+.intro-card{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:min(720px,calc(100vw - 32px));text-align:center;
+  padding:40px 36px;border-radius:26px;background:rgba(12,9,25,.88);border:1px solid rgba(255,207,107,.25);
+  box-shadow:0 0 80px rgba(242,140,40,.18),0 30px 80px rgba(0,0,0,.6);transition:opacity .6s,transform .6s}
+.intro.open .intro-card{opacity:0;transform:translate(-50%,-46%)}
+.intro-card .kicker{color:var(--muted);letter-spacing:.25em;text-transform:uppercase;font-size:13px;font-weight:700}
+.intro-card h1{font-family:'Ruslan Display',serif;font-weight:400;font-size:clamp(40px,7vw,72px);margin:12px 0 10px;color:var(--accent2);
+  text-shadow:0 0 30px rgba(242,140,40,.6);line-height:1.05}
+.intro-card p{font-size:18px;line-height:1.55;color:#ddd3ee;margin:0 auto 26px;max-width:560px}
+.intro-card .btn{font-size:18px;padding:14px 28px}
+
+@media (max-width:700px){
+  :root{--drawerW:calc(100vw - 32px)}
+  .brand{font-size:20px}.stats{display:none}
+  .top .btn{padding:8px 10px;font-size:13px}
+  .f2{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  .fog,.cloud,.bat,.ff,.lf{animation:none!important}
+}
+</style>
+</head>
+<body class="is-empty pre">
+
+<!-- общие определения svg -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <linearGradient id="stoneGrad" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#a7abb5"/><stop offset=".55" stop-color="#737884"/><stop offset="1" stop-color="#4b4f5a"/>
+    </linearGradient>
+    <radialGradient id="stoneHi" cx=".32" cy=".18" r=".7">
+      <stop offset="0" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="moonLight" x1="1" y1="0" x2="0" y2="0">
+      <stop offset="0" stop-color="#ffe9b0" stop-opacity=".18"/><stop offset=".4" stop-color="#ffe9b0" stop-opacity="0"/>
+    </linearGradient>
+    <radialGradient id="glow">
+      <stop offset="0" stop-color="#ffd27a" stop-opacity=".95"/><stop offset=".45" stop-color="#ff8a1f" stop-opacity=".35"/><stop offset="1" stop-color="#ff8a1f" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="candleGlow">
+      <stop offset="0" stop-color="#ffd27a" stop-opacity=".7"/><stop offset="1" stop-color="#ffb347" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="moundGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#2a2135"/><stop offset="1" stop-color="#140f1c"/>
+    </linearGradient>
+    <clipPath id="riseClip" clipPathUnits="userSpaceOnUse"><rect x="-100" y="-300" width="580" height="836"/></clipPath>
+    <filter id="selGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="7" result="b"/>
+      <feFlood flood-color="#ffb347" flood-opacity=".75"/>
+      <feComposite in2="b" operator="in" result="g"/>
+      <feMerge><feMergeNode in="g"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="soft"><feGaussianBlur stdDeviation="1.2"/></filter>
+    <symbol id="batSym" viewBox="-26 -12 52 24">
+      <path d="M0 -1 C-6 -7 -14 -9 -25 -4 C-19 -2 -17 2 -15 6 C-11 3 -7 4 -5 7 C-3 4 -1 3 0 4 C1 3 3 4 5 7 C7 4 11 3 15 6 C17 2 19 -2 25 -4 C14 -9 6 -7 0 -1Z M-2 -2 L-3 -6 L-1 -3 L1 -3 L3 -6 L2 -2Z" fill="#06050b"/>
+    </symbol>
+  </defs>
+</svg>
+
+<div class="sky"></div>
+<canvas id="stars"></canvas>
+<div class="moon"></div>
+<div class="cloud" style="top:13vh;animation-duration:95s;animation-delay:-30s"></div>
+<div class="cloud" style="top:24vh;width:28vw;animation-duration:130s;animation-delay:-90s;opacity:.7"></div>
+<div class="cloud" style="top:6vh;width:22vw;animation-duration:160s;animation-delay:-10s;opacity:.5"></div>
+
+<svg class="hills" viewBox="0 0 1600 400" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+  <defs>
+    <pattern id="fence" width="26" height="60" patternUnits="userSpaceOnUse" x="0" y="330">
+      <rect x="11" y="6" width="4" height="54" fill="#0c0a13"/>
+      <path d="M13 0 L17 8 L9 8Z" fill="#0c0a13"/>
+    </pattern>
+  </defs>
+  <path d="M0 250 Q180 175 420 222 T860 205 T1300 188 T1600 225 V400 H0Z" fill="#1c1735"/>
+  <!-- часовня -->
+  <g fill="#1c1735" transform="translate(1160 120)">
+    <rect x="0" y="40" width="70" height="60"/><path d="M-6 42 L35 6 L76 42Z"/>
+    <rect x="25" y="-30" width="20" height="50"/><path d="M21 -28 L35 -48 L49 -28Z"/>
+    <rect x="33" y="-62" width="4" height="16"/><rect x="28" y="-57" width="14" height="4"/>
+  </g>
+  <rect x="1188" y="182" width="14" height="20" rx="7" fill="#ffcf6b" opacity=".85"/>
+  <rect x="1190" y="135" width="6" height="10" rx="3" fill="#ffcf6b" opacity=".6"/>
+  <!-- мёртвые деревья вдали -->
+  <g stroke="#1c1735" fill="none" stroke-linecap="round">
+    <path d="M300 230 L300 150 M300 175 L278 150 M300 165 L322 140 M322 140 L330 120 M278 150 L270 132" stroke-width="5"/>
+    <path d="M700 215 L700 130 M700 160 L676 138 M700 150 L726 118 M676 138 L668 115 M726 118 L740 105" stroke-width="6"/>
+    <path d="M1460 215 L1460 150 M1460 170 L1440 150 M1460 162 L1482 135" stroke-width="5"/>
+  </g>
+  <path d="M0 330 Q300 268 620 305 T1220 292 T1600 312 V400 H0Z" fill="#120e20"/>
+  <g stroke="#120e20" fill="none" stroke-linecap="round">
+    <path d="M110 315 L110 200 M110 245 L76 205 M110 228 L150 185 M76 205 L64 176 M150 185 L170 170 M150 185 L156 160 M90 222 L80 230" stroke-width="9"/>
+    <path d="M1380 300 L1380 205 M1380 240 L1350 210 M1380 225 L1412 192 M1412 192 L1430 182" stroke-width="8"/>
+  </g>
+  <!-- маленькие кресты вдали -->
+  <g fill="#120e20">
+    <rect x="430" y="282" width="5" height="24"/><rect x="424" y="288" width="17" height="4"/>
+    <rect x="520" y="287" width="5" height="22"/><rect x="514" y="292" width="17" height="4"/>
+    <rect x="950" y="282" width="5" height="22"/><rect x="944" y="287" width="17" height="4"/>
+    <path d="M1040 300 v-14 a9 9 0 0 1 18 0 v14z"/>
+  </g>
+  <rect x="0" y="342" width="1600" height="60" fill="url(#fence)"/>
+  <rect x="0" y="352" width="1600" height="4" fill="#0c0a13"/>
+  <rect x="0" y="380" width="1600" height="4" fill="#0c0a13"/>
+</svg>
+<div class="ground"></div>
+
+<div class="bat" style="top:16vh;--d:26s;--delay:-4s"><svg viewBox="-26 -12 52 24"><use href="#batSym"/></svg></div>
+<div class="bat" style="top:22vh;width:32px;--d:34s;--delay:-19s"><svg viewBox="-26 -12 52 24"><use href="#batSym"/></svg></div>
+<div class="bat" style="top:9vh;width:24px;--d:41s;--delay:-28s"><svg viewBox="-26 -12 52 24"><use href="#batSym"/></svg></div>
+
+<div id="row"><div id="rowInner"></div></div>
+<div class="empty"><b>Пока здесь тихо…</b>Похороните первый проект: кнопка «⚰ Похоронить проект» наверху</div>
+
+<div class="fog"></div>
+<div class="fog f2"></div>
+<div id="fireflies"></div>
+<div class="leaves" id="leaves"></div>
+
+<header class="top">
+  <div class="brand">🪦 Кладбище проектов</div>
+  <div class="stats" id="stats"></div>
+  <div class="online" id="online"></div>
+  <div class="spacer"></div>
+  <button class="btn primary hide-g" id="buryBtn">⚰ Похоронить проект</button>
+  <button class="btn" id="gardenBtn">🌳 Сад уроков</button>
+  <button class="btn ghostb" id="soundBtn" title="Музыка">🔊</button>
+  <div class="menu" id="menu">
+    <button class="btn ghostb" id="menuBtn" aria-label="Меню">⋯</button>
+    <div class="menu-pop">
+      <button id="exportBtn">⬇ Экспорт в JSON</button>
+      <button id="importBtn">⬆ Импорт из JSON</button>
+      <button id="resetBtn" class="danger">🗑 Очистить кладбище — у всех</button>
+    </div>
+  </div>
+  <input type="file" id="importFile" accept="application/json,.json" hidden>
+</header>
+
+<aside class="drawer" id="drawer" aria-label="Могила"></aside>
+
+<section class="garden" id="garden"></section>
+
+<div class="modal" id="modal">
+  <form class="card" id="buryForm" autocomplete="off">
+    <button type="button" class="x" data-close>×</button>
+    <h2 id="formTitle">Похороны проекта</h2>
+    <div class="sub">Соберёмся, вспомним, отпустим. Дальше посмотрим, что вырастет на этом месте.</div>
+    <div class="f2">
+      <div class="f"><label for="fOwner">Кто провожает</label><input id="fOwner" placeholder="Имя"></div>
+      <div class="f"><label for="fYears">Годы жизни</label><input id="fYears" placeholder="2025–2026"></div>
+    </div>
+    <div class="f"><label for="fName">Проект / идея / план</label><input id="fName" required maxlength="60" placeholder="Блог, начатый в январе"></div>
+    <div class="f"><label for="fCause">Причина смерти</label><input id="fCause" maxlength="70" placeholder="Не хватило времени">
+      <div class="chips" id="causeChips"></div></div>
+    <div class="f"><label for="fEpi">Эпитафия</label>
+      <div class="epi-row"><textarea id="fEpi" maxlength="90" placeholder="Начну с понедельника."></textarea>
+      <button type="button" class="btn" id="diceBtn" title="Придумать эпитафию">🎲</button></div></div>
+    <div class="card-actions">
+      <button type="button" class="btn ghostb" data-close>Отмена</button>
+      <button type="submit" class="btn primary" id="submitBtn">⚰ Предать земле</button>
+    </div>
+  </form>
+</div>
+
+<div class="tip" id="tip"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<div class="intro" id="intro">
+  <div class="intro-dim"></div>
+  <div class="gate l"><svg aria-hidden="true">
+    <defs>
+      <pattern id="barsL" width="46" height="10" patternUnits="userSpaceOnUse"><rect x="18" width="10" height="10" fill="#0d0b15"/><rect x="18" width="2" height="10" fill="#2b2540"/></pattern>
+      <pattern id="tipsL" width="46" height="36" patternUnits="userSpaceOnUse"><path d="M23 0 L32 22 L27 22 L27 36 L19 36 L19 22 L14 22Z" fill="#0d0b15"/></pattern>
+    </defs>
+    <rect y="40" width="100%" height="36" fill="url(#tipsL)"/>
+    <rect y="76" width="100%" height="100%" fill="url(#barsL)"/>
+    <rect y="130" width="100%" height="14" fill="#0d0b15"/>
+    <rect y="58%" width="100%" height="14" fill="#0d0b15"/>
+    <rect y="88%" width="100%" height="14" fill="#0d0b15"/>
+    <rect x="100%" width="18" height="100%" transform="translate(-18 0)" fill="#0d0b15"/>
+  </svg></div>
+  <div class="gate r"><svg aria-hidden="true">
+    <rect y="40" width="100%" height="36" fill="url(#tipsL)"/>
+    <rect y="76" width="100%" height="100%" fill="url(#barsL)"/>
+    <rect y="130" width="100%" height="14" fill="#0d0b15"/>
+    <rect y="58%" width="100%" height="14" fill="#0d0b15"/>
+    <rect y="88%" width="100%" height="14" fill="#0d0b15"/>
+    <rect width="18" height="100%" fill="#0d0b15"/>
+  </svg></div>
+  <div class="intro-card">
+    <div class="kicker">Мастермайнд · Хэллоуин 2026</div>
+    <h1>Кладбище проектов</h1>
+    <p>Здесь лежат проекты, которые не взлетели, планы, которые не сбылись, и дедлайны, которые оказались сильнее нас. Проводим их с почестями и смотрим, какое дерево вырастет на каждой могиле.</p>
+    <button class="btn primary" id="openGates">🕯 Открыть ворота</button>
+  </div>
+</div>
+
+<script>
+(() => {
+const KEY = 'mm-graveyard-2026';
+const BX = 302, BY = 534, MAXD = 4, STEP = .55;
+const $ = s => document.querySelector(s);
+const row = $('#row'), inner = $('#rowInner');
+
+const CAUSES = ['не хватило времени','сменились приоритеты','пропал интерес','слишком амбициозно','выгорание','отложил(а) на потом','никому не оказалось нужно','жизнь случилась'];
+const EPITAPHS = [
+  'Начну с понедельника.',
+  'Было в планах на этот год. И на прошлый.',
+  'Ещё чуть-чуть доработаю — и покажу.',
+  'Готово на 90%. Оставшиеся 10% длились вечность.',
+  'Казалось, это займёт пару выходных.',
+  'Идея была прекрасна. Реальность — не очень.',
+  'Здесь покоится «а давайте ещё вот это добавим».',
+  'Ушла в отпуск и не вернулась.',
+  'Её обсуждали чаще, чем делали.',
+  'Она была слишком хороша для этого мира.',
+  'Не дождалась идеального момента.',
+  'Всё было готово, кроме желания.',
+  'Ей не хватило всего лишь времени, сил и денег.',
+  'Покойся в папке «Разное».',
+  'Мы её почти полюбили.',
+  'Спит в списке дел с пометкой «важно».'
+];
+const QUESTIONS = [
+  'Что бы ты сделал(а) иначе, если бы начал(а) заново?',
+  'Какой ранний сигнал ты пропустил(а)?',
+  'Что из этого всё-таки пригодилось?',
+  'Что ты теперь делаешь по-другому?',
+  'О чём стоило спросить себя в самом начале?',
+  'Что этот опыт рассказал о тебе самом(-ой)?',
+  'Что бы ты посоветовал(а) себе год назад?',
+  'Какой навык прокачался благодаря неудаче?',
+  'За что можно себя похвалить, несмотря ни на что?',
+  'Кто или что могло бы помочь тогда?'
+];
+const LEAF_COLORS = ['#e8833a','#d9572b','#f2b544','#c0392b','#b06a2c','#f5c76b','#e0662f'];
+// палитры кроны: [тень, основной, основной 2, блик]
+const GREENS = [
+  ['#1c3d22','#2f6b34','#3c7f3c','#6fae4a'],
+  ['#203a1c','#3f6a2a','#4f7f31','#8cb653'],
+  ['#163a30','#26624a','#317554','#5fa77a']
+];
+// формы кроны: шар, вытянутая (тополь), облако
+const CROWNS = {
+  ball:  { trunk: 210, ang: .1,  spread0: .6,  spread: .48, clamp: 1.15, len: [.63, .08], kids3: .3,  R: [0, 40, 34, 28, 22], sx: 1,    sy: 1,    puffs: 4, ring: [.1, .55] },
+  tall:  { trunk: 175, ang: .05, spread0: .26, spread: .17, clamp: .4,   len: [.74, .06], kids3: .15, R: [0, 26, 22, 18, 15], sx: .9,   sy: 1.8,  puffs: 4, ring: [.1, .5] },
+  cloud: { trunk: 185, ang: .14, spread0: .75, spread: .5,  clamp: 1.25, len: [.6, .06],  kids3: .4,  R: [0, 34, 29, 24, 19], sx: 1.35, sy: .8,   puffs: 6, ring: [.45, .8] }
+};
+
+const uid = () => Math.random().toString(36).slice(2, 9) + Date.now().toString(36).slice(-4);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const f1 = v => Math.round(v * 10) / 10;
+function hash(str){ let h = 2166136261; for (const c of String(str)){ h ^= c.charCodeAt(0); h = Math.imul(h, 16777619); } return h >>> 0; }
+function rng(a){ return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+const pick = arr => arr[Math.floor(Math.random() * arr.length)];
+
+/* ---------- состояние ---------- */
+// state — производное представление для отрисовки: { graves: [{ …поля, lessons: [{ id, text }] }] }.
+// Источник правды — db: записи могил и уроков с меткой времени (last-writer-wins), общие для всех посетителей.
+let state = { graves: [] };
+let selId = null, hlIdx = null, qIdx = Math.floor(Math.random() * QUESTIONS.length), editId = null;
+const rendered = new Map();
+const trees = new Map();
+
+const KEY2 = KEY + '-v2';
+const me = uid();
+let db = { clearedAt: 0, graves: {}, lessons: {} };
+let lastTs = 0;
+const clock = () => (lastTs = Math.max(Date.now(), lastTs + 1));
+const newer = (a, b) => !b || a.ts > b.ts || (a.ts === b.ts && a.by > b.by);
+
+const S = (v, n) => typeof v === 'string' ? v.slice(0, n) : '';
+const okId = v => typeof v === 'string' && v.length > 0 && v.length <= 48;
+const okTs = v => Number.isFinite(v) && v > 0 && v < Date.now() + 864e5;
+function cleanGrave(r){
+  if (!r || !okId(r.id) || !okTs(r.ts)) return null;
+  return { id: r.id, owner: S(r.owner, 60), name: S(r.name, 80) || 'безымянный проект', years: S(r.years, 30),
+    cause: S(r.cause, 100), epitaph: S(r.epitaph, 140), created: Number.isFinite(r.created) ? r.created : r.ts,
+    ts: r.ts, by: S(r.by, 48), ...(r.del ? { del: true } : {}) };
+}
+function cleanLesson(r){
+  if (!r || !okId(r.id) || !okId(r.graveId) || !okTs(r.ts)) return null;
+  return { id: r.id, graveId: r.graveId, text: S(r.text, 300), created: Number.isFinite(r.created) ? r.created : r.ts,
+    ts: r.ts, by: S(r.by, 48), ...(r.del ? { del: true } : {}) };
+}
+function mergeRec(kind, r){
+  if (r.ts <= db.clearedAt || !newer(r, db[kind][r.id])) return false;
+  db[kind][r.id] = r; lastTs = Math.max(lastTs, r.ts);
+  return true;
+}
+function mergeClear(t){
+  if (!(t > db.clearedAt)) return false;
+  db.clearedAt = t; lastTs = Math.max(lastTs, t);
+  for (const k of ['graves', 'lessons']) for (const id in db[k]) if (db[k][id].ts <= t) delete db[k][id];
+  return true;
+}
+// снапшот и сообщение по сети имеют один формат: { clear, graves: [], lessons: [] }
+const snapshot = () => ({ clear: db.clearedAt, graves: Object.values(db.graves), lessons: Object.values(db.lessons) });
+function ingest(d){
+  if (!d || typeof d !== 'object') return false;
+  let ch = okTs(d.clear) ? mergeClear(d.clear) : false;
+  for (const r of (Array.isArray(d.graves) ? d.graves : []).slice(0, 5000)){ const c = cleanGrave(r); if (c && mergeRec('graves', c)) ch = true; }
+  for (const r of (Array.isArray(d.lessons) ? d.lessons : []).slice(0, 20000)){ const c = cleanLesson(r); if (c && mergeRec('lessons', c)) ch = true; }
+  return ch;
+}
+const byCreated = (a, b) => (a.created - b.created) || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+function rebuildView(){
+  const map = new Map();
+  for (const g of Object.values(db.graves).filter(g => !g.del).sort(byCreated)){
+    const { ts, by, ...v } = g;
+    map.set(g.id, { ...v, lessons: [] });
+  }
+  for (const l of Object.values(db.lessons).filter(l => !l.del).sort(byCreated)){
+    map.get(l.graveId)?.lessons.push({ id: l.id, text: l.text });
+  }
+  state = { graves: [...map.values()] };
+}
+
+// у демо-могилы одинаковые id у всех посетителей, поэтому при синхронизации она не задваивается
+const demoLessonId = text => 'demo-' + hash(text).toString(36);
+function demoSnapshot(){
+  const texts = ['Сначала спросить, кто реально будет этим пользоваться',
+                 'Автоматизировать до того, как попросят в третий раз',
+                 'Один источник правды лучше трёх версий файла'];
+  return { graves: [{ id: 'demo', owner: 'Ведущий', name: 'excel_report_final_v2_FINAL.xlsx', years: '2019–2026',
+      cause: 'заменён дашбордом, который никто не открывает', epitaph: 'Каждый понедельник в 9:00. Вручную.', created: 1, ts: 1, by: 'demo' }],
+    lessons: texts.map((text, i) => ({ id: demoLessonId(text), graveId: 'demo', text, created: 2 + i, ts: 1, by: 'demo' })) };
+}
+function fromLegacy(s){
+  const out = { graves: [], lessons: [] };
+  for (const g of s.graves){
+    const t = g.created || 1;
+    out.graves.push({ ...g, lessons: undefined, created: t, ts: t, by: 'local' });
+    (g.lessons || []).forEach((l, i) => out.lessons.push({ id: g.id === 'demo' ? demoLessonId(l.text) : l.id,
+      graveId: g.id, text: l.text, created: t + i + 1, ts: t, by: 'local' }));
+  }
+  return out;
+}
+function load(){
+  try {
+    const raw = localStorage.getItem(KEY2);
+    if (raw){ ingest(JSON.parse(raw)); rebuildView(); return; }
+    const old = localStorage.getItem(KEY);
+    if (old){ const s = JSON.parse(old); if (s && Array.isArray(s.graves)){ ingest(fromLegacy(s)); save(); rebuildView(); return; } }
+  } catch (e) {}
+  ingest(demoSnapshot()); rebuildView();
+}
+function save(){ try { localStorage.setItem(KEY2, JSON.stringify(snapshot())); } catch (e) {} }
+const byId = id => state.graves.find(g => g.id === id);
+
+// локальное изменение: recs = [['graves' | 'lessons', запись]], clear — стереть всё, что было до этого момента
+function commit(recs, clear){
+  const out = { graves: [], lessons: [] };
+  if (clear){ out.clear = clock(); mergeClear(out.clear); }
+  for (const [kind, r] of recs){
+    r.ts = clock(); r.by = me; if (r.created === undefined) r.created = r.ts;
+    mergeRec(kind, r); out[kind].push(r);
+  }
+  save(); rebuildView(); broadcast(out);
+}
+
+/* ---------- дерево ---------- */
+const visDepth = n => n <= 0 ? -1 : n === 1 ? 1 : n <= 3 ? 2 : n <= 6 ? 3 : 4;
+const scaleFor = n => n <= 0 ? .8 : .8 + .2 * Math.min(1, (n - 1) / 8);
+const treeT = s => `translate(${BX}px,${BY}px) scale(${s}) translate(${-BX}px,${-BY}px)`;
+const hasFoliage = (vis, d) => d >= 1 && (d === vis || (vis >= 2 && d === vis - 1));
+
+function getTree(g){
+  if (trees.has(g.id)) return trees.get(g.id);
+  const rnd = rng(hash(g.id + '|tree'));
+  const shape = ['ball', 'tall', 'cloud'][Math.floor(rnd() * 3)], C = CROWNS[shape];
+  const pal = GREENS[Math.floor(rnd() * GREENS.length)];
+  const widths = [0, 8.5, 5.2, 3, 1.7];
+  const branches = [], nodes = [];
+  let trunk = '';
+  (function grow(x, y, ang, len, d){
+    const x2 = x + Math.sin(ang) * len, y2 = y - Math.cos(ang) * len;
+    const bend = (rnd() - .5) * len * .35;
+    const mx = (x + x2) / 2 + Math.cos(ang) * bend, my = (y + y2) / 2 + Math.sin(ang) * bend;
+    if (d === 0){
+      trunk = `M${BX-28} ${BY+5} Q${BX-13} ${BY} ${BX-11} ${BY-26} C${f1(mx-8)} ${f1(my)} ${f1(x2-7)} ${f1(y2+20)} ${f1(x2-5)} ${f1(y2)} L${f1(x2+5)} ${f1(y2)} C${f1(x2+7)} ${f1(y2+20)} ${f1(mx+8)} ${f1(my)} ${BX+11} ${BY-26} Q${BX+13} ${BY} ${BX+28} ${BY+5}Z`;
+    }
+    branches.push({ d: `M${f1(x)} ${f1(y)}Q${f1(mx)} ${f1(my)} ${f1(x2)} ${f1(y2)}`, depth: d, w: widths[d] });
+    nodes.push({ x: x2, y: y2, depth: d });
+    if (d >= MAXD) return;
+    const kids = d === 0 ? 3 : (rnd() < C.kids3 ? 3 : 2);
+    const spread = d === 0 ? C.spread0 : C.spread;
+    for (let k = 0; k < kids; k++){
+      let a = ang + (k / (kids - 1) - .5) * 2 * spread + (rnd() - .5) * .3 * (spread / .46);
+      a = Math.max(-C.clamp, Math.min(C.clamp, a)) * .96;
+      grow(x2, y2, a, len * (C.len[0] + rnd() * C.len[1]), d + 1);
+    }
+  })(BX, BY, -C.ang + (rnd() - .5) * .1, C.trunk, 0);
+
+  const order = {};
+  for (let d = 0; d <= MAXD; d++){
+    const arr = nodes.filter(n => n.depth === d);
+    for (let i = arr.length - 1; i > 0; i--){ const j = Math.floor(rnd() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
+    order[d] = arr;
+  }
+  for (const nd of nodes){
+    if (nd.depth < 1){ nd.leaves = ['', '', '']; continue; }
+    // «шапка» листвы: тёмная подложка, несколько пухлых клубов и лунный блик сверху-слева
+    const R = C.R[nd.depth] * (.85 + rnd() * .3);
+    const blob = (x, y, r, fill, op = 1) =>
+      `<ellipse cx="${f1(x)}" cy="${f1(y)}" rx="${f1(r * C.sx)}" ry="${f1(r * C.sy)}" fill="${fill}"${op < 1 ? ` opacity="${f1(op)}"` : ''}/>`;
+    // три слоя (тень / клубы / блик) рисуются раздельно, чтобы соседние шапки сливались в одну крону
+    const shade = blob(nd.x, nd.y + R * .12 * C.sy, R, pal[0]);
+    let body = '';
+    const puffs = C.puffs + Math.floor(rnd() * 2);
+    for (let i = 0; i < puffs; i++){
+      const a = (i / puffs) * Math.PI * 2 + rnd() * .8, dist = R * (C.ring[0] + rnd() * (C.ring[1] - C.ring[0]));
+      const x = nd.x + Math.cos(a) * dist * C.sx, y = nd.y + Math.sin(a) * dist * C.sy * (shape === 'cloud' ? .7 : 1) - R * .08 * C.sy;
+      body += blob(x, y, R * (.42 + rnd() * .22), pal[1 + Math.floor(rnd() * 2)]);
+    }
+    const hi = blob(nd.x - R * .28 * C.sx, nd.y - R * .32 * C.sy, R * .3, pal[3], .45 + rnd() * .2);
+    nd.leaves = [shade, body, hi];
+  }
+  const t = { branches, nodes, order, trunk };
+  trees.set(g.id, t);
+  return t;
+}
+
+// тыквы лежат на земле под деревом: ближние к стволу места занимаются первыми
+const SLOTS = (() => {
+  const out = [];
+  [[556, 0, 0], [580, 17, 1], [536, 8, 2]].forEach(([y, off, row]) => {
+    for (let x = 34 + off; x <= 350; x += 34){
+      if (row === 2 && Math.abs(x - BX) < 30) continue;
+      out.push({ x, y, k: Math.abs(x - BX) + row * 45 });
+    }
+  });
+  return out.sort((a, b) => a.k - b.k);
+})();
+function fruitPositions(n){
+  const out = [];
+  for (let i = 0; i < n; i++){
+    const s = SLOTS[i % SLOTS.length], extra = Math.floor(i / SLOTS.length);
+    out.push({ x: s.x + extra * 9, y: s.y - extra * 6 });
+  }
+  return out;
+}
+
+/* ---------- надгробие ---------- */
+function splitWord(w, max){
+  if (w.length <= max) return [w];
+  const out = []; let cur = '';
+  for (const p of w.split(/(?<=[_\-./])/)){
+    if ((cur + p).length <= max) cur += p;
+    else { if (cur) out.push(cur); let q = p; while (q.length > max){ out.push(q.slice(0, max)); q = q.slice(max); } cur = q; }
+  }
+  if (cur) out.push(cur);
+  return out;
+}
+function wrap(text, max, maxLines){
+  const toks = String(text).trim().split(/\s+/).filter(Boolean).flatMap(w => splitWord(w, max));
+  const lines = []; let cur = '';
+  for (const t of toks){
+    if (!cur) cur = t;
+    else if ((cur + ' ' + t).length <= max) cur += ' ' + t;
+    else { lines.push(cur); cur = t; }
+  }
+  if (cur) lines.push(cur);
+  if (lines.length > maxLines){
+    const l = lines.slice(0, maxLines);
+    l[maxLines - 1] = l[maxLines - 1].slice(0, max - 1).replace(/[\s,.;:]+$/, '') + '…';
+    return l;
+  }
+  return lines;
+}
+
+function stoneSVG(g){
+  const r = rng(hash(g.id + '|stone'));
+  const pointed = r() < .45;
+  const path = pointed
+    ? 'M70 540 L70 372 Q70 318 190 290 Q310 318 310 372 L310 540Z'
+    : 'M70 540 L70 372 Q70 302 190 302 Q310 302 310 372 L310 540Z';
+  const bevel = pointed
+    ? 'M82 538 L82 374 Q82 328 190 304 Q298 328 298 374 L298 538'
+    : 'M82 538 L82 374 Q82 316 190 316 Q298 316 298 374 L298 538';
+  const tilt = f1((r() - .5) * 5);
+
+  let moss = '';
+  for (let i = 0; i < 5; i++){
+    const left = r() < .5, x = left ? 76 + r() * 40 : 264 + r() * 40, y = 500 + r() * 34;
+    moss += `<ellipse cx="${f1(x)}" cy="${f1(y)}" rx="${f1(7 + r() * 12)}" ry="${f1(3 + r() * 5)}" fill="#5b7a36" opacity="${f1(.35 + r() * .35)}"/>`;
+  }
+  let cx = 110 + r() * 160, cy = 322 + r() * 20, crack = `M${f1(cx)} ${f1(cy)}`;
+  for (let i = 0; i < 4; i++){ cx += (r() - .5) * 22; cy += 12 + r() * 14; crack += ` L${f1(cx)} ${f1(cy)}`; }
+
+  const name = g.name || 'безымянный проект';
+  const nameSize = name.length > 22 ? 16 : 19, nameMax = nameSize === 19 ? 19 : 24;
+  let epiLines = 3, causeLines = 2, blocks;
+  const build = () => [
+    { cls: 't-rip', size: 12, lh: 15, lines: ['R · I · P'], gap: 5 },
+    { cls: 't-name', size: nameSize, lh: nameSize + 2, lines: wrap(name, nameMax, 2), gap: 4 },
+    g.years ? { cls: 't-years', size: 13.5, lh: 17, lines: [g.years], gap: 8 } : null,
+    g.cause && causeLines ? { cls: 't-cause', size: 13, lh: 16, lines: wrap('† ' + g.cause, 30, causeLines), gap: 8 } : null,
+    g.epitaph && epiLines ? { cls: 't-epi', size: 13, lh: 16, lines: wrap('«' + g.epitaph + '»', 30, epiLines), gap: 0 } : null
+  ].filter(Boolean);
+  const height = bs => bs.reduce((a, b) => a + b.lines.length * b.lh + b.gap, 0);
+  const y0 = pointed ? 326 : 322, room = 510 - y0;
+  blocks = build();
+  while (height(blocks) > room && (epiLines || causeLines)){
+    if (epiLines) epiLines--; else causeLines--;
+    blocks = build();
+  }
+  let y = y0, txt = '';
+  for (const b of blocks){
+    for (const line of b.lines){ y += b.lh; txt += `<text class="st ${b.cls}" x="190" y="${y}" font-size="${b.size}">${esc(line)}</text>`; }
+    y += b.gap;
+  }
+  if (g.owner) txt += `<text class="st t-sig" x="190" y="527" font-size="11.5">скорбит: ${esc(wrap(g.owner, 26, 1)[0])}</text>`;
+
+  return `<g transform="rotate(${tilt} 190 540)">
+    <path d="${path}" fill="url(#stoneGrad)" stroke="#353841" stroke-width="2.5"/>
+    <path d="${path}" fill="url(#stoneHi)"/>
+    <path d="${path}" fill="url(#moonLight)"/>
+    <path d="${bevel}" fill="none" stroke="rgba(255,255,255,.1)" stroke-width="1.5"/>
+    <path d="${crack}" fill="none" stroke="#3b3e46" stroke-width="1.3" stroke-linejoin="round"/>
+    ${moss}
+    <g class="hi" transform="translate(0 1.1)">${txt}</g><g class="lo">${txt}</g>
+  </g>`;
+}
+
+function pumpkin(i){
+  return `<circle class="glowc" r="25" fill="url(#glow)"/>
+    <ellipse cy="9.5" rx="15" ry="3.6" fill="rgba(0,0,0,.45)"/>
+    <g class="pk">
+      <ellipse cx="-6" rx="6.5" ry="9" fill="#d4601a"/><ellipse cx="6" rx="6.5" ry="9" fill="#d4601a"/>
+      <ellipse rx="7.5" ry="9.6" fill="#f28c28"/>
+      <path d="M0 -9 q1 -4 4.5 -5" stroke="#4f7a2a" stroke-width="2.2" fill="none" stroke-linecap="round"/>
+      <text class="fnum" y="3.4" text-anchor="middle">${i + 1}</text>
+    </g>
+    <circle r="16" fill="transparent"/>`;
+}
+
+function graveSVG(g, o){
+  const tree = getTree(g);
+  const n = g.lessons.length, vis = visDepth(n), s = scaleFor(n);
+  const pn = o.prevN, pvis = visDepth(pn), ps = scaleFor(pn);
+  let h = `<svg viewBox="0 0 380 600" role="img" aria-label="${esc('Могила: ' + g.name)}">`;
+
+  // дерево растёт перед камнем, поэтому рисуется после него
+  let tr = '';
+  if (n > 0){
+    tr += `<g class="tree" style="transform:${treeT(pn > 0 ? ps : s)}">`;
+    for (const b of tree.branches){
+      if (b.depth > vis) continue;
+      const isNew = b.depth > pvis, delay = isNew ? (b.depth - pvis - 1) * STEP : 0;
+      if (b.depth === 0) tr += `<path class="trunk${isNew ? ' new' : ''}" d="${tree.trunk}" style="animation-delay:${delay}s"/>`;
+      else tr += `<path class="b${isNew ? ' new' : ''}" pathLength="1" d="${b.d}" stroke-width="${b.w}" style="animation-delay:${f1(delay)}s"/>`;
+    }
+    for (let layer = 0; layer < 3; layer++) for (const nd of tree.nodes){
+      if (!hasFoliage(vis, nd.depth)) continue;
+      const isNew = !hasFoliage(pvis, nd.depth);
+      const delay = !isNew ? 0 : nd.depth > pvis ? (nd.depth - pvis - 1) * STEP + .6 : .1;
+      tr += `<g class="leafc${isNew ? ' new' : ''}" style="animation-delay:${f1(delay)}s">${nd.leaves[layer]}</g>`;
+    }
+    tr += `</g>`;
+  }
+
+  h += `<g clip-path="url(#riseClip)"><g class="${o.rise ? 'riser' : ''}"><g class="stoneg">${stoneSVG(g)}</g></g></g>`;
+  h += `<path d="M22 556 Q48 526 190 519 Q332 526 358 556Z" fill="url(#moundGrad)"/>
+        <path d="M40 540 Q70 525 190 520 Q310 525 340 540" fill="none" stroke="rgba(160,140,200,.16)" stroke-width="2"/>`;
+  const gr = rng(hash(g.id + '|grass'));
+  let grass = '';
+  for (let i = 0; i < 7; i++){
+    const x = f1(40 + gr() * 300), y = f1(530 + gr() * 14);
+    grass += `<path d="M${x} ${y} l-3 -9 M${x} ${y} l1 -12 M${x} ${y} l4 -8"/>`;
+  }
+  h += `<g stroke="#3a5a2a" stroke-width="1.6" stroke-linecap="round" fill="none">${grass}</g>`;
+  h += tr;
+  if (n === 0){
+    h += `<g class="sprout"><path d="M${BX} ${BY} q-1 -10 2 -19" stroke="#6fae4a" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+      <ellipse cx="${BX - 4}" cy="${BY - 18}" rx="6.5" ry="3" fill="#7cc152" transform="rotate(-30 ${BX - 4} ${BY - 18})"/>
+      <ellipse cx="${BX + 8}" cy="${BY - 20}" rx="6.5" ry="3" fill="#8fd162" transform="rotate(25 ${BX + 8} ${BY - 20})"/></g>`;
+  }
+  h += `<circle class="cglow" cx="116" cy="510" r="22" fill="url(#candleGlow)"/>
+    <rect x="112" y="510" width="8" height="15" rx="2" fill="#eadcbc"/>
+    <path class="flame" d="M116 499 q4.5 6 0 11 q-4.5 -5 0 -11Z" fill="#ffcf6b"/>`;
+
+  if (n > 0){
+    const P = fruitPositions(n);
+    const newDelay = vis > pvis ? (vis - pvis - 1) * STEP + .9 : .2;
+    for (let i = 0; i < n; i++){
+      const isNew = i >= pn, pr = rng(hash(g.lessons[i].id));
+      const rot = Math.round((pr() - .5) * 24), sc = f1(1.05 + pr() * .25);
+      h += `<g class="fruit${hlIdx === i && selId === g.id ? ' hl' : ''}" data-i="${i}" transform="translate(${P[i].x} ${P[i].y})">
+        <g class="${isNew ? 'pop' : ''}" style="animation-delay:${f1(newDelay)}s"><g class="hlw"><g transform="rotate(${rot}) scale(${sc})">${pumpkin(i)}</g></g></g></g>`;
+    }
+  }
+
+  if (o.rise){
+    const dr = rng(hash(g.id + '|dirt'));
+    let dirt = '';
+    for (let i = 0; i < 16; i++){
+      const x = f1(90 + dr() * 200), dx = Math.round((dr() - .5) * 120), dy = -Math.round(30 + dr() * 70);
+      dirt += `<circle cx="${x}" cy="532" r="${f1(2 + dr() * 3)}" fill="#3a2d3f" style="--dx:${dx};--dy:${dy};animation-delay:${f1(dr() * .6)}s"/>`;
+    }
+    h += `<g class="dirt">${dirt}</g>
+      <g class="ghost" filter="url(#soft)"><g>
+        <path d="M168 500 Q168 448 190 448 Q212 448 212 500 L206 494 L200 502 L194 494 L188 502 L182 494 L176 502 Z" fill="#e6f0ff" opacity=".85"/>
+        <ellipse cx="183" cy="468" rx="3" ry="4.5" fill="#1a1530"/><ellipse cx="197" cy="468" rx="3" ry="4.5" fill="#1a1530"/>
+        <ellipse cx="190" cy="481" rx="3" ry="4" fill="#1a1530"/>
+      </g></g>`;
+  }
+  return h + `</svg>`;
+}
+
+/* ---------- отрисовка ---------- */
+function plotOf(id){
+  let el = inner.querySelector(`.plot[data-id="${CSS.escape(id)}"]`);
+  if (!el){ el = document.createElement('div'); el.className = 'plot'; el.dataset.id = id; inner.appendChild(el); }
+  return el;
+}
+function drawGrave(g, o = {}){
+  const el = plotOf(g.id), n = g.lessons.length;
+  const prevN = o.prevN !== undefined ? o.prevN : o.anim ? (rendered.has(g.id) ? rendered.get(g.id) : n) : n;
+  el.innerHTML = graveSVG(g, { prevN, rise: o.rise });
+  el.classList.toggle('sel', g.id === selId);
+  rendered.set(g.id, n);
+  if (prevN !== n && n > 0){
+    el.getBoundingClientRect();
+    requestAnimationFrame(() => {
+      const t = el.querySelector('.tree'); if (t) t.style.transform = treeT(scaleFor(g.lessons.length));
+    });
+  }
+}
+function renderAll(){
+  const ids = new Set(state.graves.map(g => g.id));
+  [...inner.children].forEach(el => { if (!ids.has(el.dataset.id)) el.remove(); });
+  for (const g of state.graves){ inner.appendChild(plotOf(g.id)); drawGrave(g); }
+  if (selId && !byId(selId)) closeDrawer();
+  renderMeta();
+  renderDrawer();
+}
+function renderMeta(){
+  const n = state.graves.length, l = state.graves.reduce((a, g) => a + g.lessons.length, 0);
+  $('#stats').textContent = `⚰ ${n}   🎃 ${l}`;
+  document.body.classList.toggle('is-empty', n === 0);
+}
+
+/* ---------- боковая панель ---------- */
+function renderDrawer(){
+  const g = byId(selId), d = $('#drawer');
+  if (!g){ d.innerHTML = ''; return; }
+  const ls = g.lessons.map((l, i) => `<li data-i="${i}" class="${hlIdx === i ? 'hl' : ''}"><span class="n">🎃${i + 1}</span><span class="tx">${esc(l.text)}</span>
+      <button class="del" data-del="${i}" title="Удалить урок">✕</button></li>`).join('');
+  d.innerHTML = `<button class="x" id="dClose" aria-label="Закрыть">×</button>
+    <div class="d-rip">R · I · P</div>
+    <div class="d-name">${esc(g.name)}</div>
+    ${g.years ? `<div class="d-years">${esc(g.years)}</div>` : ''}
+    <dl class="d-meta">
+      ${g.cause ? `<div><dt>Причина смерти</dt><dd>${esc(g.cause)}</dd></div>` : ''}
+      ${g.epitaph ? `<div><dt>Эпитафия</dt><dd><i>«${esc(g.epitaph)}»</i></dd></div>` : ''}
+      ${g.owner ? `<div><dt>Скорбит</dt><dd>${esc(g.owner)}</dd></div>` : ''}
+    </dl>
+    <div class="d-actions"><button class="btn" id="dEdit">✎ Редактировать</button><button class="btn" id="dDig">⛏ Выкопать</button></div>
+    <h3 class="d-h">🌳 Дерево успеха</h3>
+    <div class="d-sub">Что мы вынесли из этой неудачи. С каждым уроком дерево растёт, а под ним появляется новая тыква.</div>
+    ${g.lessons.length ? `<ol class="lessons" id="lessonList">${ls}</ol>` : `<div class="no-lessons">На могиле пока только свежая земля и росток. Чему нас это научило?</div>`}
+    <div class="q"><span>💭 ${esc(QUESTIONS[qIdx])}</span><button id="qNext" title="Другой вопрос">↻</button></div>
+    <form class="lform" id="lessonForm"><textarea id="lessonInput" maxlength="160" placeholder="Например: делиться промежуточным результатом раньше"></textarea>
+      <button class="btn primary" type="submit">🌱 Вырастить ветку</button></form>
+    <div class="hint">Enter — добавить · Shift+Enter — перенос строки</div>`;
+}
+function select(id, focus){
+  selId = id; hlIdx = null;
+  inner.querySelectorAll('.plot').forEach(p => p.classList.toggle('sel', p.dataset.id === id));
+  document.body.classList.add('drawer-open');
+  renderDrawer();
+  setTimeout(() => centerOn(id), 60);
+  if (focus) setTimeout(() => $('#lessonInput')?.focus(), 450);
+}
+function closeDrawer(){
+  selId = null; hlIdx = null;
+  document.body.classList.remove('drawer-open');
+  inner.querySelectorAll('.plot.sel').forEach(p => p.classList.remove('sel'));
+}
+function centerOn(id){
+  const el = plotOf(id), r = el.getBoundingClientRect();
+  const open = document.body.classList.contains('drawer-open');
+  const vis = open && innerWidth > 700 ? innerWidth - (parseFloat(getComputedStyle(document.body).getPropertyValue('--drawerW')) || 430) - 16 : innerWidth;
+  row.scrollBy({ left: r.left + r.width / 2 - vis / 2, behavior: 'smooth' });
+}
+function setHl(i){
+  hlIdx = i;
+  const el = selId && plotOf(selId);
+  if (el) el.querySelectorAll('.fruit').forEach(f => f.classList.toggle('hl', +f.dataset.i === i));
+  document.querySelectorAll('#lessonList li').forEach(li => li.classList.toggle('hl', +li.dataset.i === i));
+}
+
+function addLesson(text){
+  let g = byId(selId); text = text.trim();
+  if (!g || !text) return;
+  commit([['lessons', { id: uid(), graveId: g.id, text }]]);
+  g = byId(g.id);
+  drawGrave(g, { anim: true });
+  Sound.chime();
+  renderMeta();
+  const idx = g.lessons.length - 1;
+  qIdx = (qIdx + 1) % QUESTIONS.length;
+  renderDrawer();
+  $('#lessonInput')?.focus();
+  setTimeout(() => {
+    const f = plotOf(g.id).querySelector(`.fruit[data-i="${idx}"] .pk`);
+    if (!f) return;
+    showTipAt(f, `<b>🎃 ${idx + 1}.</b> ${esc(text)}`);
+    setTimeout(hideTip, 4200);
+  }, 1700);
+}
+
+/* ---------- подсказка ---------- */
+const tip = $('#tip');
+function showTipAt(node, html){
+  const r = node.getBoundingClientRect();
+  tip.innerHTML = html;
+  tip.classList.add('show');
+  const w = tip.offsetWidth;
+  const x = Math.max(w / 2 + 8, Math.min(innerWidth - w / 2 - 8, r.left + r.width / 2));
+  tip.style.left = x + 'px'; tip.style.top = Math.max(tip.offsetHeight + 24, r.top) + 'px';
+}
+function hideTip(){ tip.classList.remove('show'); }
+
+/* ---------- форма похорон ---------- */
+const modal = $('#modal');
+$('#causeChips').innerHTML = CAUSES.map(c => `<button type="button" class="chip">${esc(c)}</button>`).join('');
+function openBurial(id){
+  editId = id || null;
+  const g = id ? byId(id) : null;
+  $('#formTitle').textContent = g ? 'Поправить надгробие' : 'Похороны проекта';
+  $('#submitBtn').textContent = g ? '✓ Сохранить' : '⚰ Предать земле';
+  const y = new Date().getFullYear();
+  $('#fOwner').value = g?.owner || ''; $('#fName').value = g?.name || '';
+  $('#fYears').value = g ? g.years || '' : `${y - 1}–${y}`;
+  $('#fCause').value = g?.cause || ''; $('#fEpi').value = g?.epitaph || '';
+  modal.classList.add('open');
+  setTimeout(() => (g ? $('#fName') : $('#fOwner')).focus(), 50);
+}
+function closeModal(){ modal.classList.remove('open'); }
+$('#causeChips').addEventListener('click', e => { const c = e.target.closest('.chip'); if (c){ $('#fCause').value = c.textContent; } });
+$('#diceBtn').addEventListener('click', () => { let e; do { e = pick(EPITAPHS); } while (e === $('#fEpi').value && EPITAPHS.length > 1); $('#fEpi').value = e; });
+modal.addEventListener('click', e => { if (e.target === modal || e.target.closest('[data-close]')) closeModal(); });
+$('#buryForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const data = { owner: $('#fOwner').value.trim(), name: $('#fName').value.trim(), years: $('#fYears').value.trim(),
+                 cause: $('#fCause').value.trim(), epitaph: $('#fEpi').value.trim() };
+  if (!data.name) return $('#fName').focus();
+  closeModal();
+  if (editId){
+    const cur = db.graves[editId];
+    if (!cur || cur.del) return; // пока форма была открыта, могилу выкопали у кого-то ещё
+    commit([['graves', { ...cur, ...data }]]); drawGrave(byId(editId)); renderDrawer(); return;
+  }
+  const id = uid();
+  commit([['graves', { id, ...data }]]);
+  const g = byId(id);
+  inner.appendChild(plotOf(g.id));
+  drawGrave(g, { rise: true });
+  Sound.bury();
+  renderMeta();
+  select(g.id, true);
+});
+
+/* ---------- сад уроков ---------- */
+function openGarden(){
+  closeDrawer();
+  const graves = state.graves, total = graves.reduce((a, g) => a + g.lessons.length, 0);
+  const people = new Set(graves.map(g => g.owner).filter(Boolean)).size;
+  $('#garden').innerHTML = `<div class="g-head">
+      <div><div class="g-title">Сад уроков</div><div class="g-sub">На каждой могиле что-то выросло. С Хэллоуином! 🎃</div></div>
+      <div class="g-stats">
+        <div class="g-stat"><b>${graves.length}</b><span>проектов упокоено</span></div>
+        <div class="g-stat"><b>${total}</b><span>уроков выросло</span></div>
+        <div class="g-stat"><b>${people}</b><span>скорбящих</span></div>
+      </div></div>
+    <div class="g-cols">${graves.map(g => `<div class="g-grave"><h4>🪦 ${esc(g.name)} ${g.owner ? `<span>· ${esc(g.owner)}</span>` : ''}</h4>
+      <ul>${g.lessons.length ? g.lessons.map(l => `<li>${esc(l.text)}</li>`).join('') : '<li class="none">дерево ещё не проросло</li>'}</ul></div>`).join('')}</div>`;
+  document.body.classList.add('garden-on');
+  $('#gardenBtn').textContent = '🪦 На кладбище';
+  layoutGarden();
+}
+function layoutGarden(){
+  if (!document.body.classList.contains('garden-on')) return;
+  const plotH = Math.min(innerHeight * .8, 780);
+  inner.style.transform = 'translateX(-50%)';
+  const w = inner.scrollWidth;
+  const sc = Math.min(.58, (innerWidth - 32) / w);
+  const lift = plotH * .12 * (1 - sc);
+  inner.style.transformOrigin = '50% 100%';
+  inner.style.transform = `translate(-50%, ${-lift}px) scale(${sc})`;
+  $('#garden').style.maxHeight = Math.max(180, innerHeight - plotH * sc * .9 - 100) + 'px';
+}
+function closeGarden(){
+  document.body.classList.remove('garden-on');
+  inner.style.transform = ''; inner.style.transformOrigin = '';
+  $('#gardenBtn').textContent = '🌳 Сад уроков';
+}
+
+/* ---------- события ---------- */
+inner.addEventListener('click', e => {
+  if (document.body.classList.contains('garden-on')) return;
+  const p = e.target.closest('.plot'); if (!p) return;
+  const f = e.target.closest('.fruit');
+  if (selId !== p.dataset.id) select(p.dataset.id);
+  if (f) setHl(+f.dataset.i);
+});
+inner.addEventListener('mouseover', e => {
+  const f = e.target.closest('.fruit'), p = e.target.closest('.plot');
+  if (!f || !p) return;
+  const g = byId(p.dataset.id), i = +f.dataset.i, l = g?.lessons[i];
+  if (l) showTipAt(f.querySelector('.pk'), `<b>🎃 ${i + 1}.</b> ${esc(l.text)}<br><span style="color:var(--muted);font-size:13px">${esc(g.name)}</span>`);
+});
+inner.addEventListener('mouseout', e => { if (e.target.closest('.fruit') && !e.relatedTarget?.closest?.('.fruit')) hideTip(); });
+row.addEventListener('wheel', e => {
+  if (document.body.classList.contains('garden-on')) return;
+  if (Math.abs(e.deltaY) > Math.abs(e.deltaX)){ row.scrollLeft += e.deltaY; e.preventDefault(); }
+}, { passive: false });
+
+const drawer = $('#drawer');
+drawer.addEventListener('click', e => {
+  const g = byId(selId); if (!g) return;
+  if (e.target.closest('#dClose')) return closeDrawer();
+  if (e.target.closest('#dEdit')) return openBurial(g.id);
+  if (e.target.closest('#qNext')){ qIdx = (qIdx + 1) % QUESTIONS.length; drawer.querySelector('.q span').textContent = '💭 ' + QUESTIONS[qIdx]; return; }
+  if (e.target.closest('#dDig')){
+    if (!confirm(`Выкопать «${g.name}»? Надгробие, дерево и уроки пропадут.`)) return;
+    commit([['graves', { ...db.graves[g.id], del: true }]]); rendered.delete(g.id); trees.delete(g.id);
+    closeDrawer(); renderAll(); return;
+  }
+  const del = e.target.closest('[data-del]');
+  const l = del && g.lessons[+del.dataset.del];
+  if (l){ commit([['lessons', { ...db.lessons[l.id], del: true }]]); hlIdx = null; drawGrave(byId(g.id), { anim: true }); renderDrawer(); renderMeta(); }
+});
+drawer.addEventListener('submit', e => { e.preventDefault(); addLesson($('#lessonInput').value); });
+drawer.addEventListener('keydown', e => {
+  if (e.target.id === 'lessonInput' && e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); addLesson(e.target.value); }
+});
+drawer.addEventListener('mouseover', e => { const li = e.target.closest('#lessonList li'); if (li) setHl(+li.dataset.i); });
+drawer.addEventListener('mouseleave', () => setHl(null));
+
+$('#buryBtn').addEventListener('click', () => openBurial());
+$('#gardenBtn').addEventListener('click', () => document.body.classList.contains('garden-on') ? closeGarden() : openGarden());
+$('#menuBtn').addEventListener('click', e => { e.stopPropagation(); $('#menu').classList.toggle('open'); });
+document.addEventListener('click', e => { if (!e.target.closest('#menu')) $('#menu').classList.remove('open'); });
+$('#exportBtn').addEventListener('click', () => {
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' }));
+  a.download = 'graveyard-halloween-2026.json'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+});
+$('#importBtn').addEventListener('click', () => $('#importFile').click());
+$('#importFile').addEventListener('change', async e => {
+  const file = e.target.files[0]; e.target.value = '';
+  if (!file) return;
+  try {
+    const s = JSON.parse(await file.text());
+    if (!Array.isArray(s.graves)) throw 0;
+    // импорт заменяет кладбище у всех: стираем прежнее и публикуем записи из файла как новые
+    const recs = [];
+    for (const g of s.graves){
+      const id = okId(g.id) ? g.id : uid();
+      recs.push(['graves', { id, owner: S(g.owner, 60), name: S(g.name, 80) || 'безымянный проект', years: S(g.years, 30),
+        cause: S(g.cause, 100), epitaph: S(g.epitaph, 140) }]);
+      for (const l of Array.isArray(g.lessons) ? g.lessons : [])
+        if (S(l?.text, 300)) recs.push(['lessons', { id: okId(l.id) ? l.id : uid(), graveId: id, text: S(l.text, 300) }]);
+    }
+    commit(recs, true); trees.clear(); rendered.clear(); closeDrawer(); renderAll();
+  } catch (err) { alert('Не получилось прочитать файл: нужен JSON, экспортированный отсюда.'); }
+});
+$('#resetBtn').addEventListener('click', () => {
+  if (!confirm('Очистить всё кладбище? Все надгробия и уроки пропадут у всех посетителей.')) return;
+  commit([], true); trees.clear(); rendered.clear(); closeDrawer(); closeGarden(); renderAll();
+});
+document.addEventListener('keydown', e => {
+  if (e.key !== 'Escape') return;
+  if (modal.classList.contains('open')) closeModal();
+  else if (document.body.classList.contains('garden-on')) closeGarden();
+  else if (selId) closeDrawer();
+});
+addEventListener('resize', () => { sizeStars(); layoutGarden(); });
+
+/* ---------- музыка и звуки (Web Audio, без файлов) ---------- */
+const Sound = (() => {
+  let ac = null, master, music, sfx, verb, on = true, timer = null, nextT = 0, idx = 0, pos = 0;
+  try { on = localStorage.getItem(KEY + ':sound') !== 'off'; } catch (e) {}
+  const BEAT = .64, mf = m => 440 * Math.pow(2, (m - 69) / 12);
+  const n = { A4:69, Cs5:73, D5:74, E5:76, F5:77, G5:79, A5:81, Bb5:82, C6:84, Cs6:85, D6:86 };
+  // вальс музыкальной шкатулки в ре миноре: [нота, доли]
+  const MEL = [
+    ['D5',1],['F5',1],['A5',1], ['A5',1.5],['G5',.5],['F5',1], ['D5',1],['F5',1],['Bb5',1], ['A5',2],['E5',1],
+    ['G5',1],['Bb5',1],['D6',1], ['Cs6',1.5],['D6',.5],['Bb5',1], ['A5',1],['G5',1],['E5',1], ['Cs5',2],['A4',1],
+    ['D5',1],['F5',1],['A5',1], ['D6',1.5],['C6',.5],['A5',1], ['Bb5',1],['A5',1],['F5',1], ['G5',1],['E5',1],['Cs5',1],
+    ['E5',1],['A5',1],['Cs6',1], ['Bb5',1.5],['A5',.5],['G5',1], ['F5',1],['E5',1],['Cs5',1], ['D5',3]
+  ];
+  const CH = { D: [50, 57, 62, 65], B: [46, 53, 58, 62], G: [43, 50, 55, 58], A: [45, 52, 57, 61] };
+  const BARS = 'DDBBGGAADDBGAADD';
+
+  function init(){
+    ac = new (window.AudioContext || window.webkitAudioContext)();
+    master = ac.createGain(); master.gain.value = on ? .8 : 0; master.connect(ac.destination);
+    verb = ac.createConvolver();
+    const len = ac.sampleRate * 3, buf = ac.createBuffer(2, len, ac.sampleRate);
+    for (let c = 0; c < 2; c++){ const d = buf.getChannelData(c); for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.6); }
+    verb.buffer = buf;
+    const wet = ac.createGain(); wet.gain.value = .45; verb.connect(wet).connect(master);
+    music = ac.createGain(); music.gain.value = .5; music.connect(master); music.connect(verb);
+    sfx = ac.createGain(); sfx.gain.value = .9; sfx.connect(master); sfx.connect(verb);
+    wind();
+  }
+  function env(g, t, peak, a, d){ g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(.0001, t + a + d); }
+  function osc(type, f, t, dur, dest, peak, a, d){
+    const o = ac.createOscillator(), g = ac.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t); env(g, t, peak, a, d);
+    o.connect(g).connect(dest); o.start(t); o.stop(t + dur);
+    return o;
+  }
+  function bell(t, f, g, dest){ osc('sine', f, t, 1.8, dest, g, .006, 1.6); osc('sine', f * 3.01, t, .5, dest, g * .22, .004, .35); }
+  function pad(t, notes, dur){
+    const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 650; lp.connect(music);
+    for (const m of notes) for (const det of [-7, 7]){
+      const o = ac.createOscillator(), g = ac.createGain();
+      o.type = 'sawtooth'; o.frequency.value = mf(m); o.detune.value = det;
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.014, t + .5); g.gain.setValueAtTime(.014, t + dur - .2); g.gain.linearRampToValueAtTime(0, t + dur + .8);
+      o.connect(g).connect(lp); o.start(t); o.stop(t + dur + .9);
+    }
+  }
+  function wind(){
+    const len = ac.sampleRate * 4, buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    const src = ac.createBufferSource(); src.buffer = buf; src.loop = true;
+    const bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 450; bp.Q.value = .9;
+    const lfo = ac.createOscillator(), lg = ac.createGain(); lfo.frequency.value = .07; lg.gain.value = 260; lfo.connect(lg).connect(bp.frequency);
+    const g = ac.createGain(); g.gain.value = .045;
+    src.connect(bp).connect(g).connect(master); src.start(); lfo.start();
+  }
+  function schedule(){
+    while (nextT < ac.currentTime + .25){
+      const [note, dur] = MEL[idx];
+      if (pos % 3 === 0){
+        const bar = pos / 3, ch = CH[BARS[bar]];
+        osc('triangle', mf(ch[0] - 12 < 36 ? ch[0] : ch[0] - 12), nextT, 1.4, music, .22, .01, 1.1);
+        if (bar === 0 || BARS[bar] !== BARS[bar - 1]) pad(nextT, ch, BEAT * 3 * (BARS[bar + 1] === BARS[bar] ? 2 : 1));
+      }
+      bell(nextT, mf(n[note]), .13, music);
+      nextT += dur * BEAT; pos += dur; idx++;
+      if (idx >= MEL.length){ idx = 0; pos = 0; }
+    }
+  }
+  function start(){
+    if (!ac) init();
+    if (ac.state === 'suspended' && on) ac.resume();
+    if (!timer){ nextT = ac.currentTime + .3; timer = setInterval(schedule, 50); }
+    if (!on) ac.suspend();
+  }
+  function setOn(v){
+    on = v;
+    try { localStorage.setItem(KEY + ':sound', v ? 'on' : 'off'); } catch (e) {}
+    $('#soundBtn').textContent = v ? '🔊' : '🔇';
+    if (!ac){ if (v) start(); return; }
+    if (v){ ac.resume(); start(); master.gain.setTargetAtTime(.8, ac.currentTime, .3); }
+    else { master.gain.setTargetAtTime(0, ac.currentTime, .15); setTimeout(() => { if (!on) ac.suspend(); }, 600); }
+  }
+  const live = () => ac && on && ac.state === 'running';
+  return {
+    start, isOn: () => on, toggle: () => setOn(!on), init: () => { $('#soundBtn').textContent = on ? '🔊' : '🔇'; },
+    creak(){
+      if (!live()) return;
+      const t = ac.currentTime, o = ac.createOscillator(), bp = ac.createBiquadFilter(), g = ac.createGain();
+      o.type = 'sawtooth'; o.frequency.setValueAtTime(38, t); o.frequency.linearRampToValueAtTime(22, t + .9); o.frequency.linearRampToValueAtTime(34, t + 1.8);
+      bp.type = 'bandpass'; bp.Q.value = 9; bp.frequency.setValueAtTime(700, t); bp.frequency.linearRampToValueAtTime(1300, t + .8); bp.frequency.linearRampToValueAtTime(850, t + 1.8);
+      g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(.5, t + .15); g.gain.setValueAtTime(.5, t + 1.5); g.gain.linearRampToValueAtTime(0, t + 2);
+      o.connect(bp).connect(g).connect(sfx); o.start(t); o.stop(t + 2.1);
+    },
+    bury(){
+      if (!live()) return;
+      const t = ac.currentTime;
+      [0, .5, 1].forEach(dt => {
+        const o = osc('sine', 95, t + dt, .5, sfx, .55, .005, .35); o.frequency.exponentialRampToValueAtTime(38, t + dt + .3);
+        const len = ac.sampleRate * .25, buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0);
+        for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / len);
+        const s = ac.createBufferSource(), lp = ac.createBiquadFilter(), g = ac.createGain();
+        s.buffer = buf; lp.type = 'lowpass'; lp.frequency.value = 500; g.gain.value = .35;
+        s.connect(lp).connect(g).connect(sfx); s.start(t + dt);
+      });
+      const gt = t + 1.4, o = ac.createOscillator(), g = ac.createGain(), vib = ac.createOscillator(), vg = ac.createGain();
+      o.type = 'sine'; o.frequency.setValueAtTime(330, gt); o.frequency.linearRampToValueAtTime(540, gt + .9); o.frequency.linearRampToValueAtTime(290, gt + 2.2);
+      vib.frequency.value = 5.5; vg.gain.value = 14; vib.connect(vg).connect(o.frequency);
+      g.gain.setValueAtTime(0, gt); g.gain.linearRampToValueAtTime(.07, gt + .4); g.gain.linearRampToValueAtTime(0, gt + 2.3);
+      o.connect(g).connect(verb); o.start(gt); vib.start(gt); o.stop(gt + 2.4); vib.stop(gt + 2.4);
+    },
+    chime(){
+      if (!live()) return;
+      const t = ac.currentTime;
+      [86, 89, 93, 98].forEach((m, i) => bell(t + .9 + i * .09, mf(m), .16, sfx));
+    }
+  };
+})();
+Sound.init();
+$('#soundBtn').addEventListener('click', () => Sound.toggle());
+
+/* ---------- ворота ---------- */
+$('#openGates').addEventListener('click', () => {
+  const intro = $('#intro');
+  intro.classList.add('open');
+  Sound.start();
+  setTimeout(() => Sound.creak(), 60);
+  setTimeout(() => {
+    intro.remove();
+    requestAnimationFrame(() => { document.body.classList.remove('pre'); state.graves.forEach(g => drawGrave(g, { prevN: 0 })); });
+  }, 2100);
+});
+
+/* ---------- звёзды, светлячки, листья ---------- */
+const cv = $('#stars'), ctx = cv.getContext('2d');
+let stars = [], shoot = null;
+function sizeStars(){
+  const dpr = Math.min(2, devicePixelRatio || 1);
+  cv.width = innerWidth * dpr; cv.height = innerHeight * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  const cnt = Math.min(380, Math.round(innerWidth * innerHeight / 4500));
+  stars = Array.from({ length: cnt }, () => ({ x: Math.random() * innerWidth, y: Math.random() * innerHeight * .72,
+    r: Math.random() * 1.3 + .2, p: Math.random() * 6.28, s: .5 + Math.random() * 1.5 }));
+}
+const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+function tick(t){
+  ctx.clearRect(0, 0, innerWidth, innerHeight);
+  for (const s of stars){
+    ctx.globalAlpha = .35 + .65 * (reduced ? 1 : (Math.sin(t / 1000 * s.s + s.p) + 1) / 2);
+    ctx.fillStyle = '#fff8e6'; ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 6.28); ctx.fill();
+  }
+  if (!reduced){
+    if (!shoot && Math.random() < .003) shoot = { x: Math.random() * innerWidth * .7, y: Math.random() * innerHeight * .3, life: 0 };
+    if (shoot){
+      shoot.life += 1;
+      const k = shoot.life / 45, x = shoot.x + k * 260, y = shoot.y + k * 110;
+      const gr = ctx.createLinearGradient(x - 90, y - 38, x, y);
+      gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(1, 'rgba(255,248,220,.9)');
+      ctx.globalAlpha = 1 - k; ctx.strokeStyle = gr; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.moveTo(x - 90, y - 38); ctx.lineTo(x, y); ctx.stroke();
+      if (shoot.life > 45) shoot = null;
+    }
+  }
+  ctx.globalAlpha = 1;
+  requestAnimationFrame(tick);
+}
+sizeStars(); requestAnimationFrame(tick);
+
+$('#fireflies').innerHTML = Array.from({ length: 16 }, () => {
+  const x = Math.random() * 100, y = 45 + Math.random() * 45;
+  return `<span class="ff" style="left:${x}vw;top:${y}vh;--dx:${Math.round((Math.random() - .5) * 160)}px;--dy:${Math.round((Math.random() - .5) * 120)}px;--d:${(6 + Math.random() * 8).toFixed(1)}s;--b:${(2 + Math.random() * 3).toFixed(1)}s;animation-delay:-${(Math.random() * 8).toFixed(1)}s"></span>`;
+}).join('');
+$('#leaves').innerHTML = Array.from({ length: 32 }, () =>
+  `<span class="lf" style="left:${Math.random() * 100}vw;--c:${pick(LEAF_COLORS)};--dx:${Math.round((Math.random() - .3) * 300)}px;--d:${(7 + Math.random() * 8).toFixed(1)}s;--delay:-${(Math.random() * 14).toFixed(1)}s"></span>`
+).join('');
+
+/* ---------- синхронизация между посетителями ---------- */
+// P2P через WebRTC (Trystero, сигналинг через публичные Nostr-релеи). Данные идут напрямую между браузерами,
+// на хостинге ничего не хранится. Новому пиру отдаём весь снапшот, дальше рассылаем только изменения.
+const ROOM = new URLSearchParams(location.search).get('room') || 'main';
+let net = null, peers = 0, toastT = 0;
+function broadcast(out){ try { net?.send(out); } catch (e) {} }
+function setOnline(){
+  const el = $('#online');
+  el.textContent = net ? `👥 ${peers + 1} онлайн` : '👥 офлайн';
+  el.title = net ? (peers ? `Вы и ещё ${peers} — изменения видны всем сразу` : 'Пока никого: изменения разойдутся, когда кто-нибудь зайдёт')
+                 : 'Нет связи с другими посетителями: всё хранится только у вас';
+  el.classList.toggle('on', !!net && peers > 0);
+}
+function toast(html){
+  const t = $('#toast'); t.innerHTML = html; t.classList.add('show');
+  clearTimeout(toastT); toastT = setTimeout(() => t.classList.remove('show'), 4000);
+}
+function receive(data){
+  const prev = state;
+  if (!ingest(data)) return;
+  save();
+  applyRemote(prev);
+}
+const FIELDS = ['owner', 'name', 'years', 'cause', 'epitaph'];
+function applyRemote(prev){
+  rebuildView();
+  const old = new Map(prev.graves.map(g => [g.id, g])), now = new Set(state.graves.map(g => g.id));
+  for (const g of prev.graves) if (!now.has(g.id)){ rendered.delete(g.id); trees.delete(g.id); }
+  [...inner.children].forEach(el => { if (!now.has(el.dataset.id)) el.remove(); });
+  if (selId && !now.has(selId)) closeDrawer();
+  if (editId && !now.has(editId)) closeModal();
+  renderMeta();
+  if (document.body.classList.contains('pre')) return; // ворота ещё закрыты: новые могилы нарисует интро
+
+  let chime = false, selChanged = false;
+  for (const g of state.graves){
+    const o = old.get(g.id);
+    if (!o){
+      inner.appendChild(plotOf(g.id)); drawGrave(g, { rise: true }); Sound.bury();
+      toast(`🪦 ${esc(g.owner || 'Кто-то')} похоронил(а) <b>«${esc(g.name)}»</b>`);
+      continue;
+    }
+    const lessonsChanged = o.lessons.length !== g.lessons.length || o.lessons.some((l, i) => l.id !== g.lessons[i].id || l.text !== g.lessons[i].text);
+    if (lessonsChanged) drawGrave(g, { anim: true });
+    else if (FIELDS.some(f => o[f] !== g[f])) drawGrave(g);
+    else continue;
+    if (g.id === selId) selChanged = true;
+    if (g.lessons.length > o.lessons.length){
+      chime = true;
+      toast(`🎃 Новый урок на могиле <b>«${esc(g.name)}»</b>: ${esc(g.lessons[g.lessons.length - 1].text)}`);
+    }
+  }
+  if (chime) Sound.chime();
+  // порядок могил по времени похорон (запись, сделанная офлайн, может оказаться не в конце)
+  const order = state.graves.map(g => g.id), cur = [...inner.children].map(el => el.dataset.id);
+  if (order.join() !== cur.join()) for (const id of order) inner.appendChild(plotOf(id));
+
+  if (selChanged){
+    const inp = $('#lessonInput'), val = inp?.value || '', focused = document.activeElement === inp, pos = inp?.selectionStart;
+    hlIdx = null; renderDrawer();
+    const n = $('#lessonInput');
+    if (n){ n.value = val; if (focused){ n.focus(); n.setSelectionRange(pos, pos); } }
+  }
+  if (document.body.classList.contains('garden-on')) openGarden();
+  renderMeta();
+}
+async function connect(){
+  setOnline();
+  try {
+    const { joinRoom } = await import('https://cdn.jsdelivr.net/npm/trystero@0.26.0/+esm');
+    const room = joinRoom({ appId: 'mm-graveyard-2026', relayConfig: { warnOnRelayFailure: false } }, ROOM);
+    const sync = room.makeAction('sync');
+    sync.onMessage = data => receive(data);
+    room.onPeerJoin = id => { peers++; setOnline(); try { sync.send(snapshot(), { target: id }); } catch (e) {} };
+    room.onPeerLeave = () => { peers = Math.max(0, peers - 1); setOnline(); };
+    net = sync; setOnline();
+  } catch (e) {
+    console.warn('Синхронизация недоступна, работаем локально', e);
+  }
+}
+// другие вкладки этого же браузера пишут в тот же localStorage: подхватываем их изменения
+addEventListener('storage', e => {
+  if (e.key !== KEY2 || !e.newValue) return;
+  try { const prev = state; if (ingest(JSON.parse(e.newValue))) applyRemote(prev); } catch (err) {}
+});
+
+load();
+renderAll();
+connect();
+})();
+</script>
+</body>
+</html>
